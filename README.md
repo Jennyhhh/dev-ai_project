@@ -58,16 +58,18 @@ Ollama (Local LLM Server)
 
 Select at least one additional capability to implement for your final project:
 
-- [ ] RAG (Retrieval-Augmented Generation)
-- [ ] Tools / External API integration
+- [x?] RAG (Retrieval-Augmented Generation)
+- [x] Tools / External API integration
 - [ ] Model Context Protocol (MCP)
 - [ ] Agentic workflow (Model-selected actions based on observations)
-- [ ] Memory / Persistent state
+- [x] Memory / Persistent state
 - [ ] Multimodal interaction (Text + Images)
 - [ ] Other: ______________________
 
 ### Capability justification
-Explain why the selected capability is useful and necessary for your application's user problem.
+Memory, so the application remembers all your favorites, disliked foods. preferences and dietary.
+Tools, so we can get as many recipes to be used, from internet.
+RAG, if we can't get API as example to work or we want the application to work offline.
 
 ## Setup
 
