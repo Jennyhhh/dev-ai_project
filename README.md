@@ -67,7 +67,7 @@ Select at least one additional capability to implement for your final project:
 - [ ] Other: ______________________
 
 ### Capability justification
-Memory, so the application remembers all your favorites, disliked foods. preferences and dietary.
+Memory, so the application remembers all your favorites, disliked foods, preferences and dietary.
 Tools, so we can get as many recipes to be used, from internet.
 RAG, if we can't get API as example to work or we want the application to work offline.
 
