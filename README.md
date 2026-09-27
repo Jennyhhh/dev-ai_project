@@ -21,7 +21,7 @@ because it can quickly search for many different recipes at the same time using 
 
 ## Solution
 
-Briefly describe your application, its primary value proposition, and how it addresses the problem statement above.
+An AI-powered recipe app that suggests recipes based on the ingredients, preferences, and dietary needs you provide.
 
 ## Main user workflow
 
