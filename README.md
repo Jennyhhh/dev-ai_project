@@ -14,7 +14,7 @@ Starter template for the **Development of AI Applications** course final group p
 People who lacks time or ideas of making food for everyday. Also people who want's some change to their weekly cooking.
 
 ### Problem statement
-What specific problem does this application solve for those users?
+Saves time and adds variety to cooking.
 
 ### Why AI is appropriate
 Why does this problem require AI / LLM capabilities rather than traditional deterministic software?
