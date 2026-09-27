@@ -11,7 +11,7 @@ Starter template for the **Development of AI Applications** course final group p
 ## Problem
 
 ### Intended users
-Who are the primary target users of this application?
+People who lacks time or ideas of making food for everyday. Also people who want's some change to their weekly cooking.
 
 ### Problem statement
 What specific problem does this application solve for those users?
