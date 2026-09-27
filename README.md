@@ -51,6 +51,8 @@ Ollama (Local LLM Server)
 
 - **Model used:** e.g., `llama3.2` (or specified local Ollama model)
 - **Selection rationale:** Why was this specific model chosen for your project (e.g., lightweight, performance, context size)?
+- We chose llama3.2 as our starting model because it is lightweight enough to run on all team members' laptops, requires no API keys or
+  usage costs, and keeps user data on the local machine. Can be changed later if we see it necessary.
 
 ## Additional AI capability
 
