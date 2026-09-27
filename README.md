@@ -58,7 +58,7 @@ Ollama (Local LLM Server)
 
 Select at least one additional capability to implement for your final project:
 
-- [x?] RAG (Retrieval-Augmented Generation)
+- [x] RAG (Retrieval-Augmented Generation)
 - [x] Tools / External API integration
 - [ ] Model Context Protocol (MCP)
 - [ ] Agentic workflow (Model-selected actions based on observations)
