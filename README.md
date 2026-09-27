@@ -5,7 +5,7 @@ Starter template for the **Development of AI Applications** course final group p
 ## Team members
 
 - Member 1 Jenny Heikkilä (jenny.heikkila@student.hamk.fi) github: Jennyhhh
-- Member 2 Name (email@example.com)
+- Member 2 Saija Joronen (saija21006@student.hamk.fi) github: soijj98
 - Member 3 Name (email@example.com)
 
 ## Problem
