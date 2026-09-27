@@ -17,7 +17,7 @@ People who lacks time or ideas of making food for everyday. Also people who want
 Saves time and adds variety to cooking.
 
 ### Why AI is appropriate
-Why does this problem require AI / LLM capabilities rather than traditional deterministic software?
+because it can quickly search for many different recipes at the same time using the specified ingredients, and tell you if you dont have some ingredient what you need.
 
 ## Solution
 
