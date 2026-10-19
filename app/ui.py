@@ -7,7 +7,7 @@ import gradio as gr
 
 from src.services.recipe_service import search_recipes
 from src.services.ai_service import (
-    format_api_recipes,
+    recommend_recipes,
     chat_with_assistant,
 )
 
@@ -133,27 +133,42 @@ def find_recipes(ingredients, diet, max_time):
     )
 
     try:
-        ai_response = format_api_recipes(
+        recommendation = recommend_recipes(
             ingredients=ingredients,
             recipes=recipes[:5],
             diet=diet,
-            max_time=int(max_time),
         )
 
-        if ai_response and ai_response.strip():
-            safe_ai_response = html.escape(ai_response.strip())
-            safe_ai_response = safe_ai_response.replace("\n", "<br>")
+        recipes_by_name = {recipe.get("name"): recipe for recipe in recipes[:5]}
 
-            ai_html = f"""
-            <section class="ai-recommendations">
-                <h2>🤖 Llama 3.2:n suositukset</h2>
-                <p>
-                    Tekoäly vertailee löytyneitä reseptejä
-                    antamiesi ainesten perusteella.
-                </p>
-                <div>{safe_ai_response}</div>
-            </section>
-            """
+        picks_html = ""
+        for pick in recommendation.picks:
+            recipe = recipes_by_name.get(pick.recipe_name, {})
+            matched = ", ".join(recipe.get("matched_ingredients", [])) or "-"
+            picks_html += (
+                f"<li><strong>{html.escape(pick.recipe_name)}</strong><br>"
+                f"<small>Käyttää aineksiasi: {html.escape(matched)}</small><br>"
+                f"{html.escape(pick.reason)}</li>"
+            )
+
+        list_html = f"<ol>{picks_html}</ol>" if picks_html else ""
+        note_html = (
+            f"<p><em>{html.escape(recommendation.note)}</em></p>"
+            if recommendation.note
+            else ""
+        )
+
+        ai_html = f"""
+        <section class="ai-recommendations">
+            <h2>🤖 Llama 3.2:n suositukset</h2>
+            <p>
+                Tekoäly valitsee löytyneistä resepteistä
+                parhaiten aineksiisi sopivat.
+            </p>
+            {list_html}
+            {note_html}
+        </section>
+        """
 
     except Exception:
         traceback.print_exc()
