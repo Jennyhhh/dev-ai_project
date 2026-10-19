@@ -212,12 +212,21 @@ def _keep_known_recipes(
     }
 
     valid_picks = []
+    seen_names = set()
+
     for pick in result.picks:
         exact_name = known.get(pick.recipe_name.strip().lower())
-        if exact_name:
-            valid_picks.append(pick.model_copy(update={"recipe_name": exact_name}))
-        else:
+
+        if not exact_name:
             logger.warning("Removed recipe not in search results: %s", pick.recipe_name)
+            continue
+
+        if exact_name in seen_names:
+            logger.warning("Removed duplicate recommendation: %s", exact_name)
+            continue
+
+        seen_names.add(exact_name)
+        valid_picks.append(pick.model_copy(update={"recipe_name": exact_name}))
 
     if not valid_picks and not result.note:
         return RecipeRecommendation(
@@ -226,7 +235,6 @@ def _keep_known_recipes(
         )
 
     return RecipeRecommendation(picks=valid_picks, note=result.note)
-
 
 def recommend_recipes(
     ingredients: str,
