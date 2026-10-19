@@ -11,6 +11,14 @@ from src.services.ai_service import (
     chat_with_assistant,
 )
 
+from src.capabilities.memory import (
+    UserPreferences,
+    load_preferences,
+    save_preferences,
+    parse_staples,
+    remove_pantry_staples,
+)
+
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 CSS_PATH = PROJECT_ROOT / "static" / "style.css"
@@ -37,7 +45,7 @@ def create_theme():
     )
 
 
-def find_recipes(ingredients, diet, max_time):
+def find_recipes(ingredients, diet, max_time, pantry_text):
     """Hakee reseptit ja palauttaa käyttöliittymän tulokset."""
 
     if not ingredients or not ingredients.strip():
@@ -48,6 +56,13 @@ def find_recipes(ingredients, diet, max_time):
             gr.update(choices=[], value=None),
             [],
         )
+
+    # Muisti: tallennetaan ruokavalio ja perusainekset seuraavaa kertaa varten.
+    staples = parse_staples(pantry_text or "")
+    try:
+        save_preferences(UserPreferences(diet=diet, pantry_staples=staples))
+    except OSError:
+        traceback.print_exc()
 
     try:
         recipes = search_recipes(ingredients)
@@ -69,6 +84,8 @@ def find_recipes(ingredients, diet, max_time):
             gr.update(choices=[], value=None),
             [],
         )
+
+    recipes = remove_pantry_staples(recipes, staples)
 
     cards = []
 
@@ -338,6 +355,14 @@ def create_ui():
                         elem_id="diet-select",
                     )
 
+                    pantry = gr.Textbox(
+                        label="Perusainekset, jotka löytyvät aina kotoa",
+                        info="Näitä ei näytetä puuttuvina aineksina. Asetukset tallentuvat haun yhteydessä.",
+                        placeholder="Esim. salt, pepper, olive oil",
+                        lines=1,
+                        elem_id="pantry-input",
+                    )
+
                     max_time = gr.Slider(
                         minimum=10,
                         maximum=120,
@@ -403,7 +428,7 @@ def create_ui():
 
         search_button.click(
             fn=find_recipes,
-            inputs=[ingredients, diet, max_time],
+            inputs=[ingredients, diet, max_time, pantry],
             outputs=[
                 recipe_output,
                 status,
@@ -441,6 +466,16 @@ def create_ui():
             fn=clear_chat,
             inputs=[],
             outputs=[chatbot],
+        )
+
+        def load_saved_preferences():
+            preferences = load_preferences()
+            return preferences.diet, ", ".join(preferences.pantry_staples)
+
+        demo.load(
+            fn=load_saved_preferences,
+            inputs=[],
+            outputs=[diet, pantry],
         )
 
     return demo
