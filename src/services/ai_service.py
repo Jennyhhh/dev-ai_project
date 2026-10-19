@@ -1,6 +1,18 @@
 
 from src.models.model_client import generate_response
 
+from pydantic import ValidationError
+
+from src.schemas.responses import RecipeRecommendation
+from src.services.prompts import (
+    RECOMMENDER_SYSTEM_PROMPT,
+    build_recommendation_prompt,
+)
+
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 SYSTEM_PROMPT = """
 Olet suomenkielinen ruoanlaittoassistentti, joka auttaa valmistamaan
@@ -187,3 +199,67 @@ Vastaa lyhyesti suomeksi.
         return "Tekoäly ei tuottanut suositusta."
 
     return response.strip()
+
+def _keep_known_recipes(
+    result: RecipeRecommendation,
+    recipes: list[dict],
+) -> RecipeRecommendation:
+    """Removes picks that are not in the retrieved recipe list (hallucinated recipes)."""
+
+    known = {
+        str(recipe.get("name", "")).strip().lower(): recipe.get("name", "")
+        for recipe in recipes
+    }
+
+    valid_picks = []
+    for pick in result.picks:
+        exact_name = known.get(pick.recipe_name.strip().lower())
+        if exact_name:
+            valid_picks.append(pick.model_copy(update={"recipe_name": exact_name}))
+        else:
+            logger.warning("Removed recipe not in search results: %s", pick.recipe_name)
+
+    if not valid_picks and not result.note:
+        return RecipeRecommendation(
+            picks=[],
+            note="The AI could not recommend any of the recipes found.",
+        )
+
+    return RecipeRecommendation(picks=valid_picks, note=result.note)
+
+
+def recommend_recipes(
+    ingredients: str,
+    recipes: list[dict],
+    diet: str = "Ei erityisruokavaliota",
+    max_retries: int = 1,
+) -> RecipeRecommendation:
+    """Asks the model to choose the best recipes and returns a validated result."""
+
+    if not recipes:
+        return RecipeRecommendation(picks=[], note="No recipes were found.")
+
+    recipes = recipes[:5]
+    prompt = build_recommendation_prompt(ingredients, diet, recipes)
+    schema = RecipeRecommendation.model_json_schema()
+
+    last_error = None
+
+    for _ in range(max_retries + 1):
+        raw = generate_response(
+            prompt,
+            RECOMMENDER_SYSTEM_PROMPT,
+            json_schema=schema,
+            num_predict=600,
+        )
+
+        try:
+            result = RecipeRecommendation.model_validate_json(raw)
+        except ValidationError as error:
+            logger.warning("Invalid model output: %s", raw)
+            last_error = error
+            continue
+
+        return _keep_known_recipes(result, recipes)
+
+    raise ValueError(f"The model returned invalid output: {last_error}")
