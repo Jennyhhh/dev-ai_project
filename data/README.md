@@ -1,14 +1,16 @@
-# Data Directory
+# Reseptiaineisto (RAG Local Fallback Dataset)
 
-This directory is designated for project-specific data, reference documents, sample files, or datasets used by your application (for example, documents used for RAG or input samples).
+Tämä aineisto toimii sovelluksen paikallisena RAG-tietokantana ja varajärjestelmänä (fallbackina), jos ulkoinen resepti-API ei vastaa tai sen kiintiö ylittyy.
 
-## Data Governance & Commit Guidelines
+## Aineiston tiedot ja lähde
 
-To maintain privacy, security, and repository health, **DO NOT COMMIT**:
+* **Aineiston nimi:** Better Recipes for a Better Life (Recipes Dataset)
+* **Lähde:** Kaggle ([https://www.kaggle.com/datasets/thedevastator/better-recipes-for-a-better-life](https://www.kaggle.com/datasets/thedevastator/better-recipes-for-a-better-life))
+* **Lisenssi:** **CC0: Public Domain** (Creative Commons Zero 1.0 Universal)
+* **Käyttöoikeus:** Aineisto on luovutettu vapaaseen julkiseen käyttöön ilman tekijänoikeusrajoituksia.
 
-1. **Confidential Data:** Proprietary business information, private company records, or non-public data.
-2. **Personal Data (PII):** Names, phone numbers, email addresses, or personal identity information without explicit consent.
-3. **Large Datasets:** Files larger than 10MB (store large raw datasets externally or use `.gitignore`).
-4. **Credentials & Secrets:** Never store API keys, tokens, or passwords in data files.
+## Käsitellyt tiedostot
 
-Use this directory responsibly for small, sample datasets and public documentation.
+* `recipes.json`: Alkuperäisestä yli 100 000 reseptin aineistosta poimittu noin 200 reseptin edustava otos.
+  * Otoksen rajaus tehtiin suorituskykysyistä ja versionhallinnan tiedostokokorajoitusten vuoksi.
+  * Reseptit on jäsennelty muotoon: `id`, `name`, `ingredients` (lista) ja `instructions`.
