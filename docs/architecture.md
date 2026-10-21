@@ -1,42 +1,57 @@
-# Architecture Documentation
+# Architecture
 
-This document describes the baseline architectural layer of the application and provides guidance on extending it for your team project.
+This document describes how the recipe app is built and why it is split into these parts.
 
-## Baseline Architecture
-
-The starter application follows a clean layered separation of concerns:
+## Diagram
 
 ```text
 User
   ↓
 Gradio UI (app/ui.py)
-  ↓
-Application / AI Service (src/services/ai_service.py)
-  ↓
-Model Client (src/models/model_client.py)
-  ↓
-Ollama (Local Inference Server)
-  ↓
-Local Model (e.g., llama3.2)
+  ├──→ Memory (src/capabilities/memory.py) ←→ data/user_preferences.json
+  │
+  ├──→ Recipe service (src/services/recipe_service.py)
+  │       ↓
+  │     Recipe API client (src/clients/recipe_api_client.py) → TheMealDB API (internet)
+  │
+  └──→ AI service (src/services/ai_service.py)
+          ├─ uses Prompts (src/services/prompts.py)
+          ├─ uses Schemas (src/schemas/responses.py)
+          ↓
+        Model client (src/models/model_client.py) → Ollama → llama3.2 (local)
 ```
 
-### Core Design Rules
+## Components
 
-1. **Strict UI Isolation:** The Gradio user interface (`app/ui.py`) MUST NOT directly instantiate `OllamaModelClient` or make direct API calls to Ollama. It delegates all operations to `generate_response()` in `src/services/ai_service.py`.
-2. **Controlled Failure Handling:** The model client handles low-level runtime exceptions (e.g., connection errors or missing models). The service layer converts technical exceptions into structured, user-understandable responses.
-3. **Data Schemas:** Request inputs and response structures are validated using Pydantic models in `src/schemas/responses.py`.
+| Component | File | What it does |
+|---|---|---|
+| User interface | `app/ui.py` | Gradio page: ingredient input, diet, pantry staples, recipe cards, AI recommendations and chat. Shows data and passes user input to the other layers. |
+| Memory | `src/capabilities/memory.py` | Saves and loads the user's diet and pantry staples in a JSON file. Removes pantry staples from missing ingredients. |
+| Recipe service | `src/services/recipe_service.py` | Searches recipes for each ingredient, compares ingredients and sorts the results by how well they match. |
+| Recipe API client | `src/clients/recipe_api_client.py` | Makes the HTTP requests to TheMealDB. |
+| AI service | `src/services/ai_service.py` | Builds the request to the model, checks the answer and handles errors. Also handles the follow-up chat. |
+| Prompts | `src/services/prompts.py` | All instructions for the recommendation model in one place. |
+| Schemas | `src/schemas/responses.py` | Pydantic models that define what a valid AI answer looks like. |
+| Model client | `src/models/model_client.py` | Sends requests to the local Ollama server. |
 
----
+## Why it is built this way
 
-## Extension Points for Course Projects
+- **The UI does not talk to the model directly.** All AI requests go through the AI service. This
+  way the prompt, validation and error handling are in one place and can be tested without the UI.
+- **Facts come from code, the model only chooses and explains.** Recipe search and ingredient
+  matching are done in normal code, because they must be correct. The model is only used for the
+  part where language skills help: choosing the best recipes and explaining why.
+- **Prompts are in their own file.** It is easy to find and change the instructions without
+  touching the logic.
+- **Memory is a separate module.** Saving and loading preferences does not depend on the UI or
+  the model.
 
-As your project team designs and implements your additional AI capability, extend this baseline architecture. Potential capability extensions include:
+## Failure handling
 
-- **RAG (Retrieval-Augmented Generation):** Insert document parsing, chunking, vector embeddings, and vector database retrieval into the service layer to ground model responses in domain documents.
-- **Tools & External APIs:** Integrate tool execution functions into the service layer allowing the model to query web services or local python utilities.
-- **Model Context Protocol (MCP):** Connect your service layer to standard MCP servers to access external tools and context providers.
-- **Agent Workflows:** Implement observation-action loops controlled by application code to handle dynamic multi-step tasks.
-- **Memory & Conversation State:** Store session history or persistent state across user interactions.
-- **Multimodal Models:** Update the model client and UI payload to pass image data to vision-enabled local models.
-
-> **Instruction:** Replace or update the architecture diagram in this file as your team implements new components.
+| Situation | What happens |
+|---|---|
+| The model returns invalid JSON | The answer is retried once. If it fails again, the recipes are still shown and the user is told that AI recommendations are not available. |
+| The model recommends a recipe that was not found, or the same recipe twice | The recipe is removed in code and a warning is logged. |
+| Ollama is not running | Recipes are still shown; AI recommendations and chat show an error message. |
+| TheMealDB does not respond | Requests time out after 10 seconds. Failed searches are skipped, so the user may see "no recipes found" instead of a network error (known limitation). |
+| The memory file is missing or broken | Default preferences are used and a warning is logged. The app does not crash. |
