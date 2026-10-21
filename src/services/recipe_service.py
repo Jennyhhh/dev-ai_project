@@ -4,12 +4,11 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from src.capabilities.rag import RecipeRAG
-#from src.clients.recipe_api_client import RecipeApiClient
+
 
 from src.clients.recipe_api_client import (
     search_recipes_by_ingredient,
     get_recipe_details,
-    #RecipeApiClient  ---- voi ottaa tämän luokan käyttöön kun toteuttaa oman RecipeApiClient -luokan -----
 )
 
 logger = logging.getLogger(__name__)
@@ -245,10 +244,8 @@ class RecipeService:
 
     def __init__(
             self,
-            #api_client: Optional[RecipeApiClient] = None,
             rag_client: Optional[RecipeRAG] = None,
     ):
-        #self.api_client = api_client or RecipeApiClient()
         self.rag_client = rag_client or RecipeRAG()
 
     def search_recipes(

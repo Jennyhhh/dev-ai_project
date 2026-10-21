@@ -22,5 +22,52 @@
     "expected_behavior": "Gracefully rejects empty input with a friendly user error message.",
     "actual_result": "",
     "status": "pending"
+  },
+  
+  {
+    "id": "case-01-rag-success",
+    "category": "rag_success",
+    "input": {
+      "ingredients": ["punaiset linssit", "porkkana", "tomaattimurska"],
+      "diet_preferences": []
+    },
+    "expected_behavior": "RAG-haku löytää ja palauttaa suoraan Vegaaninen linssikeitto -reseptin korkealla samankaltaisuuspisteellä (source: rag).",
+    "actual_result": "",
+    "status": "pending"
+  },
+  {
+    "id": "case-02-rag-hard",
+    "category": "rag_constraint",
+    "input": {
+      "ingredients": ["lohikäärmehedelmä", "sahrami", "tryffeliöljy"],
+      "diet_preferences": []
+    },
+    "expected_behavior": "Järjestelmä ei kaadu outoihin aineksiin, vaan RAG palauttaa joko tyhjän listan tai etäisimmän vastikkeen erittäin matalalla osumapisteellä.",
+    "actual_result": "",
+    "status": "pending"
+  },
+  {
+    "id": "case-03-diet-filter",
+    "category": "diet_filtering",
+    "input": {
+      "ingredients": ["kana", "kerma", "pasta"],
+      "diet_preferences": ["dairy-free"]
+    },
+    "expected_behavior": "Kermainen kanapasta nousee hakutuloksiin ainesosien perusteella, mutta deterministinen suodatin karsii sen pois tuloksista maidoton-preferenssin ja 'kerma'-sanan (DAIRY_KEYWORDS) vuoksi.",
+    "actual_result": "",
+    "status": "pending"
+  },
+  {
+    "id": "case-04-fallback-simulation",
+    "category": "fallback_simulation",
+    "input": {
+      "ingredients": ["tofu", "parsakaali", "nuudeli"],
+      "diet_preferences": [],
+      "simulate_api_failure": true
+    },
+    "expected_behavior": "Kun API ei vastaa tai se ohitetaan, palvelu siirtyy sujuvasti RAG-varajärjestelmään ja palauttaa paikallisesta arkistosta Tofuwokki-reseptin (source: rag).",
+    "actual_result": "",
+    "status": "pending"
   }
+
 ]
