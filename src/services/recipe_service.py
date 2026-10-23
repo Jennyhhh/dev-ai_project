@@ -1,10 +1,43 @@
 
 import re
+import logging
+from typing import Any, Dict, List, Optional
+
+from src.capabilities.rag import RecipeRAG
+
 
 from src.clients.recipe_api_client import (
     search_recipes_by_ingredient,
     get_recipe_details,
 )
+
+logger = logging.getLogger(__name__)
+
+NON_VEGAN_KEYWORDS = {
+    "meat", "beef", "pork", "chicken", "turkey", "bacon", "ham", "fish", "salmon",
+    "tuna", "shrimp", "seafood", "egg", "eggs", "milk", "cream", "cheese",
+    "butter", "yogurt", "liha", "nauta", "sika", "kana", "broileri", "kalkkuna",
+    "pekoni", "kinkku", "kala", "lohi", "tonnikala", "katkarapu", "muna",
+    "kananmuna", "maito", "kerma", "juusto", "voi", "jogurtti"
+}
+
+GLUTEN_KEYWORDS = {
+    "wheat", "flour", "pasta", "spaghetti", "macaroni", "bread", "barley",
+    "rye", "beer", "couscous", "semolina", "vehnä", "jauho", "pasta",
+    "spagetti", "makaroni", "leipä", "ohra", "ruis", "korppujauho"
+}
+
+DAIRY_KEYWORDS = {
+    "milk", "cream", "cheese", "butter", "yogurt", "sour cream", "parmesan",
+    "cheddar", "mozzarella", "maito", "kerma", "juusto", "voi", "jogurtti",
+    "kermaviili", "rahka"
+}
+
+NUT_KEYWORDS = {
+    "nut", "nuts", "peanut", "peanuts", "almond", "almonds", "walnut", "walnuts",
+    "cashew", "cashews", "hazelnut", "hazelnuts", "pähkinä", "maapähkinä",
+    "manteli", "cashew"
+}
 
 
 def normalize_ingredient(value: str) -> str:
@@ -171,3 +204,88 @@ def search_recipes(ingredients_text: str) -> list[dict]:
     )
 
     return results
+
+def filter_recipe_by_diets (
+        recipe: Dict[str, Any], diet_preferences: List[str]
+) -> bool:
+    if not diet_preferences:
+        return True
+
+    ingredient_text = " ".join(recipe.get("ingredients", [])).lower()
+    recipe_name = recipe.get("name", "").lower()
+    full_text = f"{recipe_name} {ingredient_text}"
+
+    for pref in diet_preferences:
+        pref_clean = pref.lower().strip()
+
+        #1. vegaaninen
+        if pref_clean in ["vegan", "vegaaninen"]:
+            if any(word in full_text for word in NON_VEGAN_KEYWORDS):
+                return False
+
+        # 2. gluteeniton
+        elif pref_clean in ["gluten-free", "gluteeniton"]:
+            if any(word in full_text for word in GLUTEN_KEYWORDS):
+                return False
+
+        # 3. maidoton
+        elif pref_clean in ["dairy-free", "maidoton"]:
+            if any(word in full_text for word in DAIRY_KEYWORDS):
+                return False
+
+        # 4. pähkinätön
+        elif pref_clean in ["nut-free", "pähkinätön"]:
+            if any(word in full_text for word in NUT_KEYWORDS):
+                return False
+
+    return True
+
+class RecipeService:
+
+    def __init__(
+            self,
+            rag_client: Optional[RecipeRAG] = None,
+    ):
+        self.rag_client = rag_client or RecipeRAG()
+
+    def search_recipes(
+        self,
+        ingredients: List[str],
+        diet_preferences: Optional[List[str]] = None,
+        limit: int = 3,
+    ) -> List[Dict[str, Any]]:
+        """Hakee reseptejä ensisijaisesti API:sta ja virhetilanteessa RAG-varajärjestelmästä.
+
+        Suodattaa lopulliset tulokset deterministisesti käyttäjän ruokavaliotoiveiden mukaisesti.
+        """
+        diet_preferences = diet_preferences or []
+        recipes: List[Dict[str, Any]] = []
+        api_failed = False
+
+        # 1. Ensisijainen haku: Ulkoinen API
+        try:
+            logger.info("Yritetään hakea reseptejä ulkoisesta API:sta...")
+            api_results = self.api_client.search_by_ingredients(ingredients)
+            if api_results:
+                for r in api_results:
+                    r["source"] = "api"
+                recipes = api_results
+            else:
+                logger.info("API ei palauttanut tuloksia, siirrytään RAG-varajärjestelmään.")
+                api_failed = True
+        except Exception as e:
+            logger.warning(f"API-haku epäonnistui ({e}), käytetään RAG-varajärjestelmää.")
+            api_failed = True
+
+        # 2. Varajärjestelmän (Fallback) logiikka: Jos API ei vastaa tai tuloksia ei saatu
+        if api_failed or not recipes:
+            logger.info("Haetaan reseptit paikallisesta RAG-tietokannasta...")
+            recipes = self.rag_client.query_recipes(ingredients, top_k=limit * 2)
+
+        # 3. Deterministinen ruokavaliosuodatus
+        filtered_recipes = [
+            r for r in recipes if filter_recipe_by_diets(r, diet_preferences)
+        ]
+
+        return filtered_recipes[:limit]
+    
