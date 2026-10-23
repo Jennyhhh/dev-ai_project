@@ -1,3 +1,4 @@
+
 name: dev-ai-project
 
 channels:
@@ -12,3 +13,4 @@ dependencies:
       - pydantic
       - python-dotenv
       - pytest
+      - requests

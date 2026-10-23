@@ -1,7 +1,7 @@
-/* ========================================
+/* =========================================
    MITÄ TÄNÄÄN SYÖTÄISIIN?
-   Lämmin beige, ruskea ja terrakotta
-   ======================================== */
+   Värit, lomakkeet, reseptit ja keskustelu
+   ========================================= */
 
 :root {
     color-scheme: light;
@@ -17,10 +17,15 @@
     --accent-color: #c87542;
     --accent-hover: #ad6035;
 
+    --recommendation-bg: #f1e7db;
+    --recommendation-border: #e5d5c3;
+
     --soft-shadow: 0 4px 18px rgba(73, 55, 43, 0.06);
 }
 
-/* Perustyyli */
+/* =========================================
+   YLEISET TYYLIT
+   ========================================= */
 
 html,
 body {
@@ -32,34 +37,25 @@ body {
 .gradio-container {
     width: 100% !important;
     max-width: 1600px !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
-    padding-left: 28px !important;
-    padding-right: 28px !important;
-
+    margin: 0 auto !important;
+    padding: 0 28px !important;
     background: var(--page-bg) !important;
     color: var(--text-color) !important;
     font-family: Arial, sans-serif !important;
 }
 
-/* Yhtenäinen fontti ja tekstivärit */
-
-.gradio-container,
 .gradio-container p,
 .gradio-container label,
 .gradio-container h1,
 .gradio-container h2,
 .gradio-container h3,
 .gradio-container h4,
-.gradio-container span,
 .gradio-container li,
 .gradio-container strong,
 .gradio-container small {
     font-family: Arial, sans-serif !important;
-    color: var(--text-color) !important;
+    color: var(--text-color);
 }
-
-/* Linkit */
 
 .gradio-container a,
 .gradio-container a:visited {
@@ -70,7 +66,9 @@ body {
     color: var(--accent-color) !important;
 }
 
-/* Otsikko */
+/* =========================================
+   OTSIKKO
+   ========================================= */
 
 #app-header {
     width: 100%;
@@ -94,7 +92,13 @@ body {
     margin-top: 0;
 }
 
-/* Hakulomake */
+/* =========================================
+   HAKULOMAKE
+   ========================================= */
+
+#search-panel-column {
+    min-width: 0 !important;
+}
 
 #search-panel {
     width: 100% !important;
@@ -106,11 +110,8 @@ body {
     background: var(--panel-bg) !important;
     border: 1px solid var(--border-color) !important;
     border-radius: 20px !important;
-
     box-shadow: var(--soft-shadow) !important;
 }
-
-/* Hakulomakkeen sisäiset elementit */
 
 #search-panel label {
     color: var(--text-color) !important;
@@ -121,12 +122,27 @@ body {
 #search-panel textarea,
 #search-panel select,
 #search-panel [role="combobox"] {
-    background: #ffffff !important;
+    background: var(--card-bg) !important;
     color: var(--text-color) !important;
     border-color: var(--border-color) !important;
     font-family: Arial, sans-serif !important;
     border-radius: 12px !important;
     box-shadow: none !important;
+}
+
+#search-panel input::placeholder,
+#search-panel textarea::placeholder {
+    color: #998779 !important;
+    opacity: 1 !important;
+}
+
+#search-panel input:focus,
+#search-panel textarea:focus,
+#search-panel [role="combobox"]:focus,
+#search-panel [role="combobox"]:focus-within {
+    border-color: var(--accent-color) !important;
+    outline-color: var(--accent-color) !important;
+    box-shadow: 0 0 0 2px rgba(200, 117, 66, 0.12) !important;
 }
 
 /* Ainesosakenttä */
@@ -140,30 +156,9 @@ body {
     min-height: 110px !important;
     font-size: 1rem !important;
     line-height: 1.7 !important;
-    color: var(--text-color) !important;
-    background: #ffffff !important;
-    border: 1px solid var(--border-color) !important;
-    border-radius: 12px !important;
 }
 
-#ingredients-input textarea::placeholder,
-#search-panel input::placeholder {
-    color: #998779 !important;
-    opacity: 1 !important;
-}
-
-/* Kenttien kohdistustila */
-
-#search-panel input:focus,
-#search-panel textarea:focus,
-#search-panel [role="combobox"]:focus,
-#search-panel [role="combobox"]:focus-within {
-    border-color: var(--accent-color) !important;
-    outline-color: var(--accent-color) !important;
-    box-shadow: 0 0 0 2px rgba(200, 117, 66, 0.12) !important;
-}
-
-/* Ruokavaliovalikko */
+/* Ruokavalio */
 
 #diet-select {
     width: 100% !important;
@@ -172,9 +167,6 @@ body {
 #diet-select input,
 #diet-select [role="combobox"] {
     width: 100% !important;
-    color: var(--text-color) !important;
-    background: #ffffff !important;
-    border-radius: 12px !important;
 }
 
 /* Valikon vaihtoehdot */
@@ -186,27 +178,21 @@ body {
 }
 
 #search-panel [role="option"]:hover {
-    background: #f1e7db !important;
-    color: var(--text-color) !important;
+    background: var(--recommendation-bg) !important;
 }
 
-/* Valmistusaika */
+/* Valmistusaika ja valintakentät */
 
 #time-slider {
     width: 100% !important;
-    margin-top: 12px;
-    margin-bottom: 12px;
+    margin: 12px 0;
 }
-
-#time-slider label,
-#time-slider span {
-    color: var(--text-color) !important;
-}
-
-/* Gradio-liukusäätimen korostusväri */
 
 #time-slider input,
-#time-slider [role="slider"] {
+#time-slider [role="slider"],
+#search-panel input[type="range"],
+#search-panel input[type="checkbox"],
+#search-panel input[type="radio"] {
     accent-color: var(--accent-color) !important;
 }
 
@@ -217,36 +203,37 @@ body {
     margin-top: 12px;
 }
 
-#search-button button,
-#search-button {
+#search-button,
+#search-button button {
     min-height: 50px !important;
     border: 1px solid var(--accent-color) !important;
     border-radius: 12px !important;
     background: var(--accent-color) !important;
     color: #ffffff !important;
-    font-family: Arial, sans-serif !important;
     font-size: 1rem !important;
     font-weight: 600 !important;
     box-shadow: none !important;
-    transition: background 0.2s ease, transform 0.2s ease !important;
+    transition: background 0.2s ease, transform 0.2s ease;
 }
 
-#search-button button *,
-#search-button * {
+#search-button *,
+#chat-send-button * {
     color: #ffffff !important;
 }
 
-#search-button button:hover,
-#search-button:hover {
+#search-button:hover,
+#search-button button:hover {
     background: var(--accent-hover) !important;
     border-color: var(--accent-hover) !important;
 }
 
-#search-button button:active {
+#search-button:active {
     transform: translateY(1px);
 }
 
-/* Hakutilanne */
+/* =========================================
+   HAKUTILANNE JA TULOKSET
+   ========================================= */
 
 #status-message {
     width: 100%;
@@ -257,17 +244,11 @@ body {
     line-height: 1.7;
 }
 
-/* Hakutulokset */
-
-#recipe-output {
-    width: 100% !important;
-    max-width: none !important;
-    min-width: 0 !important;
-}
-
+#recipe-output,
 .recipe-results {
     width: 100% !important;
     max-width: none !important;
+    min-width: 0 !important;
     box-sizing: border-box;
 }
 
@@ -279,7 +260,9 @@ body {
     margin: 36px 0 26px;
 }
 
-/* Tekoälyn suositukset */
+/* =========================================
+   TEKOÄLYN SUOSITUKSET
+   ========================================= */
 
 .ai-recommendations {
     width: 100%;
@@ -288,10 +271,9 @@ body {
     padding: 26px 30px;
     box-sizing: border-box;
 
-    background: #f1e7db !important;
+    background: var(--recommendation-bg) !important;
     color: var(--text-color) !important;
-
-    border: 1px solid #e5d5c3 !important;
+    border: 1px solid var(--recommendation-border) !important;
     border-radius: 18px;
 
     line-height: 1.8;
@@ -312,7 +294,9 @@ body {
     line-height: 1.8;
 }
 
-/* Reseptikorttien asettelu */
+/* =========================================
+   RESEPTIKORTIT
+   ========================================= */
 
 .recipe-grid {
     display: grid !important;
@@ -321,11 +305,8 @@ body {
     align-items: stretch;
 
     width: 100% !important;
-    max-width: none !important;
     box-sizing: border-box;
 }
-
-/* Yksittäinen reseptikortti */
 
 .recipe-card {
     width: 100%;
@@ -337,11 +318,10 @@ body {
 
     background: var(--card-bg) !important;
     color: var(--text-color) !important;
-
     border: 1px solid var(--border-color) !important;
     border-radius: 18px !important;
-
     box-shadow: var(--soft-shadow) !important;
+
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -354,8 +334,7 @@ body {
     color: var(--text-color) !important;
     font-size: 1.25rem;
     line-height: 1.45;
-    margin-top: 8px;
-    margin-bottom: 16px;
+    margin: 8px 0 16px;
 }
 
 .recipe-card p,
@@ -369,8 +348,6 @@ body {
     color: var(--text-color) !important;
 }
 
-/* Reseptikuvat */
-
 .recipe-image {
     display: block;
     width: 100%;
@@ -380,12 +357,12 @@ body {
     margin-bottom: 18px;
 }
 
-/* Valmistusohjeet */
+/* Valmistusohjeiden avaus */
 
 .recipe-instructions-container {
     margin-top: 20px;
-    border-top: 1px solid var(--border-color);
     padding-top: 8px;
+    border-top: 1px solid var(--border-color);
 }
 
 .recipe-summary {
@@ -408,7 +385,39 @@ body {
     margin-top: 12px;
 }
 
-/* Tabletit */
+/* =========================================
+   KESKUSTELUOSIO
+   ========================================= */
+
+#chatbot-panel {
+    border: 1px solid var(--border-color) !important;
+    border-radius: 16px !important;
+}
+
+#chat-message-input textarea {
+    background: var(--card-bg) !important;
+    color: var(--text-color) !important;
+    border-color: var(--border-color) !important;
+    border-radius: 12px !important;
+}
+
+#chat-send-button,
+#chat-send-button button {
+    background: var(--accent-color) !important;
+    border-color: var(--accent-color) !important;
+    color: #ffffff !important;
+    border-radius: 12px !important;
+}
+
+#chat-send-button:hover,
+#chat-send-button button:hover {
+    background: var(--accent-hover) !important;
+    border-color: var(--accent-hover) !important;
+}
+
+/* =========================================
+   RESPONSIVE – TABLETIT
+   ========================================= */
 
 @media (max-width: 900px) {
     .gradio-container {
@@ -434,7 +443,9 @@ body {
     }
 }
 
-/* Puhelimet */
+/* =========================================
+   RESPONSIVE – PUHELIMET
+   ========================================= */
 
 @media (max-width: 600px) {
     .gradio-container {
@@ -476,75 +487,5 @@ body {
     .results-heading {
         font-size: 1.45rem;
         margin-top: 28px;
-    }
-}
-
-/* Gradio-asettelun leveyskorjaus */
-
-.gradio-container {
-    width: 100% !important;
-    max-width: 1600px !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
-}
-
-#search-panel-column {
-    min-width: 0 !important;
-}
-
-#search-panel {
-    width: 100% !important;
-    max-width: 1100px !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
-}
-
-/* Lomakkeen sisältö ja tekstivärit */
-
-#search-panel,
-#search-panel label,
-#search-panel p {
-    color: #49372b !important;
-}
-
-#search-panel input,
-#search-panel textarea,
-#search-panel [role="combobox"] {
-    color: #49372b !important;
-    background-color: #ffffff !important;
-    border-color: #e8ded2 !important;
-}
-
-/* Terrakotta korostusväri */
-
-#search-panel input[type="range"],
-#search-panel input[type="checkbox"],
-#search-panel input[type="radio"] {
-    accent-color: #c87542 !important;
-}
-
-#search-button,
-#search-button button {
-    background: #c87542 !important;
-    border-color: #c87542 !important;
-    color: #ffffff !important;
-}
-
-#search-button button:hover {
-    background: #ad6035 !important;
-    border-color: #ad6035 !important;
-}
-
-/* Pienillä näytöillä lomake käyttää koko leveyden */
-
-@media (max-width: 600px) {
-    #search-panel-column {
-        min-width: 0 !important;
-    }
-
-    #search-panel {
-        width: 100% !important;
-        max-width: 100% !important;
-        padding: 18px !important;
     }
 }

@@ -1,7 +1,6 @@
 
 import html
 import traceback
-from pathlib import Path
 
 import gradio as gr
 
@@ -10,7 +9,6 @@ from src.services.ai_service import (
     recommend_recipes,
     chat_with_assistant,
 )
-
 from src.capabilities.memory import (
     UserPreferences,
     load_preferences,
@@ -20,59 +18,184 @@ from src.capabilities.memory import (
 )
 
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-CSS_PATH = PROJECT_ROOT / "static" / "style.css"
-
+# =========================================
+# TEEMA
+# =========================================
 
 def create_theme():
-    """Luo sovelluksen väriteeman."""
+    """Määrittää Gradio-komponenttien pohjateeman.
 
+    Tarkemmat ulkoasutyylit ovat static/style.css-tiedostossa.
+    """
     return gr.themes.Soft(
         primary_hue="orange",
         secondary_hue="stone",
         neutral_hue="stone",
-    ).set(
-        body_background_fill="#f7f3ed",
-        body_text_color="#49372b",
-        block_background_fill="#fffcf8",
-        block_border_color="#e8ded2",
-        input_background_fill="#ffffff",
-        input_border_color="#e8ded2",
-        input_placeholder_color="#998779",
-        button_primary_background_fill="#c87542",
-        button_primary_background_fill_hover="#ad6035",
-        button_primary_text_color="#ffffff",
     )
 
 
+# =========================================
+# RESEPTIKORTIN MUODOSTUS
+# =========================================
+
+def create_recipe_card(recipe):
+    """Muodostaa yksittäisen reseptin HTML-kortin."""
+
+    name = html.escape(
+        str(recipe.get("name") or "Nimetön resepti")
+    )
+
+    image_url = str(recipe.get("image") or "")
+    matched = recipe.get("matched_ingredients", [])
+    missing = recipe.get("missing_ingredients", [])
+    instructions = str(recipe.get("instructions") or "")
+
+    matched_html = ", ".join(
+        html.escape(str(item)) for item in matched
+    )
+
+    missing_html = ", ".join(
+        html.escape(str(item)) for item in missing
+    )
+
+    instructions_html = html.escape(instructions)
+
+    image_html = ""
+
+    if image_url.startswith(("https://", "http://")):
+        safe_image_url = html.escape(image_url, quote=True)
+
+        image_html = (
+            f'<img class="recipe-image" src="{safe_image_url}" '
+            f'alt="{name}" loading="lazy">'
+        )
+
+    return f"""
+    <article class="recipe-card">
+        {image_html}
+
+        <h3>{name}</h3>
+
+        <p>
+            <strong>Sinulta löytyvät:</strong><br>
+            {matched_html or "Ei tunnistettuja osumia"}
+        </p>
+
+        <p>
+            <strong>Mahdollisesti puuttuvat:</strong><br>
+            {missing_html or "Ei tunnistettuja puuttuvia aineksia"}
+        </p>
+
+        <details class="recipe-instructions-container">
+            <summary class="recipe-summary">
+                Avaa alkuperäinen valmistusohje
+            </summary>
+
+            <div class="recipe-instructions">
+                {instructions_html or "Valmistusohje puuttuu."}
+            </div>
+        </details>
+    </article>
+    """
+
+
+# =========================================
+# TEKOÄLYN SUOSITUSTEN MUODOSTUS
+# =========================================
+
+def create_recommendations_html(recommendation, recipes):
+    """Muodostaa Llama 3.2:n suositukset HTML-muotoon."""
+
+    recipes_by_name = {
+        recipe.get("name"): recipe
+        for recipe in recipes[:5]
+    }
+
+    picks_html = ""
+
+    for pick in recommendation.picks:
+        recipe = recipes_by_name.get(pick.recipe_name, {})
+
+        matched = (
+            ", ".join(recipe.get("matched_ingredients", []))
+            or "-"
+        )
+
+        picks_html += (
+            f"<li>"
+            f"<strong>{html.escape(str(pick.recipe_name))}</strong><br>"
+            f"<small>Käyttää aineksiasi: "
+            f"{html.escape(matched)}</small><br>"
+            f"{html.escape(str(pick.reason))}"
+            f"</li>"
+        )
+
+    list_html = f"<ol>{picks_html}</ol>" if picks_html else ""
+
+    note_html = (
+        f"<p><em>{html.escape(str(recommendation.note))}</em></p>"
+        if recommendation.note
+        else ""
+    )
+
+    return f"""
+    <section class="ai-recommendations">
+        <h2>🤖 Llama 3.2:n suositukset</h2>
+
+        <p>
+            Tekoäly valitsee löytyneistä resepteistä
+            parhaiten aineksiisi sopivat.
+        </p>
+
+        {list_html}
+        {note_html}
+    </section>
+    """
+
+
+# =========================================
+# RESEPTIHAKU
+# =========================================
+
 def find_recipes(ingredients, diet, max_time, pantry_text):
     """Hakee reseptit ja palauttaa käyttöliittymän tulokset."""
+
+    empty_choices = gr.update(choices=[], value=None)
 
     if not ingredients or not ingredients.strip():
         return (
             "",
             "Kirjoita ensin vähintään yksi ainesosa.",
             [],
-            gr.update(choices=[], value=None),
+            empty_choices,
             [],
         )
 
-    # Muisti: tallennetaan ruokavalio ja perusainekset seuraavaa kertaa varten.
+    # Tallennetaan ruokavalio ja perusainekset.
     staples = parse_staples(pantry_text or "")
+
     try:
-        save_preferences(UserPreferences(diet=diet, pantry_staples=staples))
+        save_preferences(
+            UserPreferences(
+                diet=diet,
+                pantry_staples=staples,
+            )
+        )
     except OSError:
         traceback.print_exc()
 
+    # Haetaan reseptit TheMealDB-palvelusta.
     try:
         recipes = search_recipes(ingredients)
     except Exception:
         traceback.print_exc()
+
         return (
             "",
-            "Reseptien haku epäonnistui. Tarkista verkkoyhteys ja yritä uudelleen.",
+            "Reseptien haku epäonnistui. "
+            "Tarkista verkkoyhteys ja yritä uudelleen.",
             [],
-            gr.update(choices=[], value=None),
+            empty_choices,
             [],
         )
 
@@ -81,73 +204,28 @@ def find_recipes(ingredients, diet, max_time, pantry_text):
             "",
             "Reseptejä ei löytynyt. Kokeile muita aineksia.",
             [],
-            gr.update(choices=[], value=None),
+            empty_choices,
             [],
         )
 
+    # Huomioidaan käyttäjän tallentamat perusainekset.
     recipes = remove_pantry_staples(recipes, staples)
 
-    cards = []
+    # Näytetään enintään 10 reseptiä.
+    available_recipes = recipes[:10]
 
-    for recipe in recipes[:10]:
-        name = html.escape(
-            str(recipe.get("name") or "Nimetön resepti")
-        )
-        image_url = str(recipe.get("image") or "")
-        matched = recipe.get("matched_ingredients", [])
-        missing = recipe.get("missing_ingredients", [])
-        instructions = str(recipe.get("instructions") or "")
+    cards_html = "".join(
+        create_recipe_card(recipe)
+        for recipe in available_recipes
+    )
 
-        matched_html = ", ".join(
-            html.escape(str(item)) for item in matched
-        )
-        missing_html = ", ".join(
-            html.escape(str(item)) for item in missing
-        )
-        instructions_html = html.escape(instructions)
-
-        image_html = ""
-
-        if image_url.startswith(("https://", "http://")):
-            safe_image_url = html.escape(image_url, quote=True)
-            image_html = (
-                f'<img class="recipe-image" src="{safe_image_url}" '
-                f'alt="{name}" loading="lazy">'
-            )
-
-        cards.append(
-            f"""
-            <article class="recipe-card">
-                {image_html}
-                <h3>{name}</h3>
-
-                <p>
-                    <strong>Sinulta löytyvät:</strong><br>
-                    {matched_html or "Ei tunnistettuja osumia"}
-                </p>
-
-                <p>
-                    <strong>Mahdollisesti puuttuvat:</strong><br>
-                    {missing_html or "Ei tunnistettuja puuttuvia aineksia"}
-                </p>
-
-                <details class="recipe-instructions-container">
-                    <summary class="recipe-summary">
-                        Avaa alkuperäinen valmistusohje
-                    </summary>
-                    <div class="recipe-instructions">
-                        {instructions_html or "Valmistusohje puuttuu."}
-                    </div>
-                </details>
-            </article>
-            """
-        )
-
-    ai_html = ""
     status_message = (
         f"Haettiin {len(recipes)} reseptiä. "
-        f"Näytetään enintään {min(len(recipes), 10)} reseptiä."
+        f"Näytetään enintään {len(available_recipes)} reseptiä."
     )
+
+    # Llama 3.2:n suositukset.
+    ai_html = ""
 
     try:
         recommendation = recommend_recipes(
@@ -156,39 +234,14 @@ def find_recipes(ingredients, diet, max_time, pantry_text):
             diet=diet,
         )
 
-        recipes_by_name = {recipe.get("name"): recipe for recipe in recipes[:5]}
-
-        picks_html = ""
-        for pick in recommendation.picks:
-            recipe = recipes_by_name.get(pick.recipe_name, {})
-            matched = ", ".join(recipe.get("matched_ingredients", [])) or "-"
-            picks_html += (
-                f"<li><strong>{html.escape(pick.recipe_name)}</strong><br>"
-                f"<small>Käyttää aineksiasi: {html.escape(matched)}</small><br>"
-                f"{html.escape(pick.reason)}</li>"
-            )
-
-        list_html = f"<ol>{picks_html}</ol>" if picks_html else ""
-        note_html = (
-            f"<p><em>{html.escape(recommendation.note)}</em></p>"
-            if recommendation.note
-            else ""
+        ai_html = create_recommendations_html(
+            recommendation,
+            recipes,
         )
-
-        ai_html = f"""
-        <section class="ai-recommendations">
-            <h2>🤖 Llama 3.2:n suositukset</h2>
-            <p>
-                Tekoäly valitsee löytyneistä resepteistä
-                parhaiten aineksiisi sopivat.
-            </p>
-            {list_html}
-            {note_html}
-        </section>
-        """
 
     except Exception:
         traceback.print_exc()
+
         status_message += (
             " AI-suosituksia ei saatu tällä kertaa, "
             "mutta reseptit näytetään normaalisti."
@@ -197,18 +250,23 @@ def find_recipes(ingredients, diet, max_time, pantry_text):
     output = f"""
     <div class="recipe-results">
         {ai_html}
-        <h2 class="results-heading">🍳 TheMealDB:n reseptit</h2>
+
+        <h2 class="results-heading">
+            🍳 TheMealDB:n reseptit
+        </h2>
+
         <div class="recipe-grid">
-            {''.join(cards)}
+            {cards_html}
         </div>
     </div>
     """
 
-    available_recipes = recipes[:10]
     recipe_names = [
         str(recipe.get("name") or "Nimetön resepti")
         for recipe in available_recipes
     ]
+
+    selected_value = recipe_names[0] if recipe_names else None
 
     return (
         output,
@@ -216,12 +274,15 @@ def find_recipes(ingredients, diet, max_time, pantry_text):
         available_recipes,
         gr.update(
             choices=recipe_names,
-            value=recipe_names[0] if recipe_names else None,
+            value=selected_value,
         ),
         [],
     )
 
 
+# =========================================
+# TEKOÄLYKESKUSTELU
+# =========================================
 
 def respond_to_chat(
     message,
@@ -232,7 +293,7 @@ def respond_to_chat(
     selected_recipe_name,
     recipes,
 ):
-    """Käsittelee keskustelun Gradio 6.30:n viestimuodossa."""
+    """Käsittelee keskustelun Gradio-viestimuodossa."""
 
     history = list(history or [])
 
@@ -279,6 +340,7 @@ def respond_to_chat(
 
     except Exception:
         traceback.print_exc()
+
         answer = (
             "Viestin käsittely epäonnistui. Tarkista, että Ollama "
             "on käynnissä ja Llama 3.2 -malli on asennettu. "
@@ -289,6 +351,7 @@ def respond_to_chat(
         "role": "user",
         "content": message,
     })
+
     history.append({
         "role": "assistant",
         "content": answer,
@@ -299,22 +362,36 @@ def respond_to_chat(
 
 def clear_chat():
     """Tyhjentää keskusteluhistorian."""
-
     return []
 
 
-def create_ui():
-    """Rakentaa sovelluksen käyttöliittymän."""
+# =========================================
+# TALLENNETTUJEN ASETUSTEN LATAUS
+# =========================================
 
-    if not CSS_PATH.is_file():
-        raise FileNotFoundError(
-            f"CSS-tiedostoa ei löytynyt: {CSS_PATH}"
-        )
+def load_saved_preferences():
+    """Lataa ruokavalion ja perusainekset muistista."""
+
+    preferences = load_preferences()
+
+    return (
+        preferences.diet,
+        ", ".join(preferences.pantry_staples),
+    )
+
+
+# =========================================
+# KÄYTTÖLIITTYMÄ
+# =========================================
+
+def create_ui():
+    """Rakentaa Gradio-käyttöliittymän."""
 
     with gr.Blocks(
-        title="Mitä tänään syötäisiin?"
+        title="Mitä tänään syötäisiin?",
     ) as demo:
 
+        # Otsikko
         gr.Markdown(
             """
             # 🍳 Mitä tänään syötäisiin?
@@ -323,8 +400,10 @@ def create_ui():
             elem_id="app-header",
         )
 
+        # Reseptien tallennus käyttöliittymän tilaan
         recipes_state = gr.State([])
 
+        # Hakulomake
         with gr.Row():
             with gr.Column(scale=1, min_width=0):
                 pass
@@ -335,6 +414,7 @@ def create_ui():
                 elem_id="search-panel-column",
             ):
                 with gr.Column(elem_id="search-panel"):
+
                     ingredients = gr.Textbox(
                         label="Mitä aineksia sinulla on?",
                         placeholder="Esim. chicken, rice, tomato",
@@ -357,7 +437,10 @@ def create_ui():
 
                     pantry = gr.Textbox(
                         label="Perusainekset, jotka löytyvät aina kotoa",
-                        info="Näitä ei näytetä puuttuvina aineksina. Asetukset tallentuvat haun yhteydessä.",
+                        info=(
+                            "Näitä ei näytetä puuttuvina aineksina. "
+                            "Asetukset tallentuvat haun yhteydessä."
+                        ),
                         placeholder="Esim. salt, pepper, olive oil",
                         lines=1,
                         elem_id="pantry-input",
@@ -378,20 +461,26 @@ def create_ui():
                         elem_id="search-button",
                     )
 
+        # Hakutilanne
         status = gr.Markdown(
             "Reseptiehdotukset ilmestyvät tähän.",
             elem_id="status-message",
         )
 
-        recipe_output = gr.HTML(elem_id="recipe-output")
+        # Reseptikortit
+        recipe_output = gr.HTML(
+            elem_id="recipe-output",
+        )
 
         gr.Markdown("---")
 
+        # Keskusteluosio
         gr.Markdown(
             """
             ## 💬 Kysy lisää ruoka-assistentilta
 
-            Kysy resepteistä, pyydä vaihtoehtoja tai tarkenna valmistusohjeita.
+            Kysy resepteistä, pyydä vaihtoehtoja tai
+            tarkenna valmistusohjeita.
             """
         )
 
@@ -403,11 +492,13 @@ def create_ui():
                 "yleisiä kysymyksiä varten."
             ),
             interactive=True,
+            elem_id="selected-recipe",
         )
 
         chatbot = gr.Chatbot(
             label="Keskustelu Llama 3.2:n kanssa",
             height=380,
+            elem_id="chatbot-panel",
         )
 
         with gr.Row():
@@ -416,19 +507,33 @@ def create_ui():
                 placeholder="Esim. Millä voisin korvata kerman?",
                 lines=2,
                 scale=5,
+                elem_id="chat-message-input",
             )
 
             send_button = gr.Button(
                 "Lähetä",
                 variant="primary",
                 scale=1,
+                elem_id="chat-send-button",
             )
 
-        clear_button = gr.Button("Tyhjennä keskustelu")
+        clear_button = gr.Button(
+            "Tyhjennä keskustelu",
+            elem_id="chat-clear-button",
+        )
+
+        # =====================================
+        # TAPAHTUMAT
+        # =====================================
 
         search_button.click(
             fn=find_recipes,
-            inputs=[ingredients, diet, max_time, pantry],
+            inputs=[
+                ingredients,
+                diet,
+                max_time,
+                pantry,
+            ],
             outputs=[
                 recipe_output,
                 status,
@@ -448,7 +553,10 @@ def create_ui():
             recipes_state,
         ]
 
-        chat_outputs = [chatbot, chat_message]
+        chat_outputs = [
+            chatbot,
+            chat_message,
+        ]
 
         send_button.click(
             fn=respond_to_chat,
@@ -468,10 +576,7 @@ def create_ui():
             outputs=[chatbot],
         )
 
-        def load_saved_preferences():
-            preferences = load_preferences()
-            return preferences.diet, ", ".join(preferences.pantry_staples)
-
+        # Ladataan muisti sovelluksen avautuessa.
         demo.load(
             fn=load_saved_preferences,
             inputs=[],
@@ -479,13 +584,3 @@ def create_ui():
         )
 
     return demo
-
-
-if __name__ == "__main__":
-    app = create_ui()
-    css_content = CSS_PATH.read_text(encoding="utf-8")
-
-    app.launch(
-        css=css_content,
-        theme=create_theme(),
-    )
