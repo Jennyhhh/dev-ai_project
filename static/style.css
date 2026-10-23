@@ -1,7 +1,6 @@
-/* ========================================
-   MITÄ TÄNÄÄN SYÖTÄISIIN?
-   Lämmin beige, ruskea ja terrakotta
-   ======================================== */
+/* =========================================
+   AI RECIPE APP - GLOBAL THEME
+   ========================================= */
 
 :root {
     color-scheme: light;
@@ -9,6 +8,7 @@
     --page-bg: #f7f3ed;
     --panel-bg: #fffcf8;
     --card-bg: #ffffff;
+
     --border-color: #e8ded2;
 
     --text-color: #49372b;
@@ -17,10 +17,16 @@
     --accent-color: #c87542;
     --accent-hover: #ad6035;
 
+    --recommendation-bg: #f1e7db;
+    --recommendation-border: #e5d5c3;
+
     --soft-shadow: 0 4px 18px rgba(73, 55, 43, 0.06);
 }
 
-/* Perustyyli */
+
+/* =========================================
+   GENERAL
+   ========================================= */
 
 html,
 body {
@@ -32,152 +38,170 @@ body {
 .gradio-container {
     width: 100% !important;
     max-width: 1600px !important;
+
     margin-left: auto !important;
     margin-right: auto !important;
-    padding-left: 28px !important;
-    padding-right: 28px !important;
+
+    padding: 0 28px !important;
+    box-sizing: border-box !important;
 
     background: var(--page-bg) !important;
     color: var(--text-color) !important;
+
     font-family: Arial, sans-serif !important;
 }
 
-/* Yhtenäinen fontti ja tekstivärit */
-
-.gradio-container,
-.gradio-container p,
-.gradio-container label,
 .gradio-container h1,
 .gradio-container h2,
 .gradio-container h3,
 .gradio-container h4,
-.gradio-container span,
+.gradio-container p,
+.gradio-container label,
 .gradio-container li,
-.gradio-container strong,
-.gradio-container small {
+.gradio-container strong {
     font-family: Arial, sans-serif !important;
-    color: var(--text-color) !important;
+    color: var(--text-color);
 }
 
-/* Linkit */
-
-.gradio-container a,
-.gradio-container a:visited {
+.gradio-container a {
     color: var(--accent-hover) !important;
 }
 
-.gradio-container a:hover {
-    color: var(--accent-color) !important;
-}
 
-/* Otsikko */
+/* =========================================
+   HEADER
+   ========================================= */
 
 #app-header {
-    width: 100%;
-    text-align: center;
-    margin: 28px auto 32px;
+    width: 100% !important;
+
+    margin: 28px auto 32px !important;
+
+    text-align: center !important;
 }
 
 #app-header h1 {
+    font-size: clamp(1.9rem, 4vw, 2.7rem) !important;
+    line-height: 1.25 !important;
+
     color: var(--text-color) !important;
-    font-size: clamp(1.9rem, 4vw, 2.7rem);
-    line-height: 1.25;
-    margin-bottom: 12px;
+
     letter-spacing: -0.6px;
+    margin-bottom: 12px !important;
 }
 
-#app-header h3 {
+#app-header p {
+    font-size: 1rem !important;
+    line-height: 1.7 !important;
+
     color: var(--muted-color) !important;
-    font-size: 1rem;
-    font-weight: 400;
-    line-height: 1.7;
-    margin-top: 0;
+
+    text-align: center !important;
 }
 
-/* Hakulomake */
+
+/* =========================================
+   CENTERED SEARCH FORM
+   ========================================= */
+
+/*
+   The outer Gradio column fills the page.
+   The inner panel has a fixed maximum width
+   and automatic horizontal margins.
+*/
+
+#search-panel-column {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+
+    margin-left: auto !important;
+    margin-right: auto !important;
+
+    box-sizing: border-box !important;
+}
 
 #search-panel {
     width: 100% !important;
     max-width: 1100px !important;
+    min-width: 0 !important;
+
     margin: 0 auto 30px !important;
+
     padding: 30px !important;
     box-sizing: border-box !important;
 
     background: var(--panel-bg) !important;
+
     border: 1px solid var(--border-color) !important;
     border-radius: 20px !important;
 
     box-shadow: var(--soft-shadow) !important;
 }
 
-/* Hakulomakkeen sisäiset elementit */
-
 #search-panel label {
     color: var(--text-color) !important;
     font-weight: 600 !important;
 }
 
+
+/* =========================================
+   SEARCH INPUTS
+   ========================================= */
+
 #search-panel input,
 #search-panel textarea,
 #search-panel select,
 #search-panel [role="combobox"] {
-    background: #ffffff !important;
+    background: var(--card-bg) !important;
     color: var(--text-color) !important;
+
     border-color: var(--border-color) !important;
-    font-family: Arial, sans-serif !important;
     border-radius: 12px !important;
+
     box-shadow: none !important;
+    font-family: Arial, sans-serif !important;
 }
 
-/* Ainesosakenttä */
-
-#ingredients-input {
-    width: 100% !important;
-}
-
-#ingredients-input textarea {
-    width: 100% !important;
-    min-height: 110px !important;
-    font-size: 1rem !important;
-    line-height: 1.7 !important;
-    color: var(--text-color) !important;
-    background: #ffffff !important;
-    border: 1px solid var(--border-color) !important;
-    border-radius: 12px !important;
-}
-
-#ingredients-input textarea::placeholder,
-#search-panel input::placeholder {
+#search-panel input::placeholder,
+#search-panel textarea::placeholder {
     color: #998779 !important;
     opacity: 1 !important;
 }
 
-/* Kenttien kohdistustila */
-
 #search-panel input:focus,
 #search-panel textarea:focus,
-#search-panel [role="combobox"]:focus,
 #search-panel [role="combobox"]:focus-within {
     border-color: var(--accent-color) !important;
-    outline-color: var(--accent-color) !important;
-    box-shadow: 0 0 0 2px rgba(200, 117, 66, 0.12) !important;
+
+    box-shadow:
+        0 0 0 2px rgba(200, 117, 66, 0.12) !important;
 }
 
-/* Ruokavaliovalikko */
-
-#diet-select {
+#ingredients-input,
+#diet-select,
+#pantry-input {
     width: 100% !important;
+    min-width: 0 !important;
+}
+
+#ingredients-input textarea {
+    width: 100% !important;
+    min-height: 80px !important;
+
+    font-size: 1rem !important;
+    line-height: 1.6 !important;
 }
 
 #diet-select input,
 #diet-select [role="combobox"] {
     width: 100% !important;
-    color: var(--text-color) !important;
-    background: #ffffff !important;
-    border-radius: 12px !important;
 }
 
-/* Valikon vaihtoehdot */
+#pantry-input textarea {
+    width: 100% !important;
+    min-height: 45px !important;
+}
 
 #search-panel [role="listbox"],
 #search-panel [role="option"] {
@@ -186,153 +210,180 @@ body {
 }
 
 #search-panel [role="option"]:hover {
-    background: #f1e7db !important;
-    color: var(--text-color) !important;
+    background: var(--recommendation-bg) !important;
 }
 
-/* Valmistusaika */
 
-#time-slider {
-    width: 100% !important;
-    margin-top: 12px;
-    margin-bottom: 12px;
-}
-
-#time-slider label,
-#time-slider span {
-    color: var(--text-color) !important;
-}
-
-/* Gradio-liukusäätimen korostusväri */
-
-#time-slider input,
-#time-slider [role="slider"] {
-    accent-color: var(--accent-color) !important;
-}
-
-/* Hakupainike */
+/* =========================================
+   SEARCH BUTTON
+   ========================================= */
 
 #search-button {
     width: 100% !important;
-    margin-top: 12px;
-}
-
-#search-button button,
-#search-button {
     min-height: 50px !important;
+
+    margin-top: 12px !important;
+
+    background: var(--accent-color) !important;
     border: 1px solid var(--accent-color) !important;
     border-radius: 12px !important;
-    background: var(--accent-color) !important;
+
     color: #ffffff !important;
-    font-family: Arial, sans-serif !important;
     font-size: 1rem !important;
     font-weight: 600 !important;
+
     box-shadow: none !important;
-    transition: background 0.2s ease, transform 0.2s ease !important;
+
+    transition:
+        background 0.2s ease,
+        transform 0.2s ease;
 }
 
-#search-button button *,
 #search-button * {
     color: #ffffff !important;
 }
 
-#search-button button:hover,
 #search-button:hover {
     background: var(--accent-hover) !important;
     border-color: var(--accent-hover) !important;
 }
 
-#search-button button:active {
+#search-button:active {
     transform: translateY(1px);
 }
 
-/* Hakutilanne */
+
+/* =========================================
+   SEARCH STATUS
+   ========================================= */
 
 #status-message {
-    width: 100%;
-    max-width: 1100px;
-    margin: 0 auto 24px;
-    text-align: center;
+    width: 100% !important;
+    max-width: 1100px !important;
+
+    margin: 0 auto 24px !important;
+
+    text-align: center !important;
     color: var(--muted-color) !important;
-    line-height: 1.7;
+
+    line-height: 1.7 !important;
 }
 
-/* Hakutulokset */
+#status-message p {
+    text-align: center !important;
+    color: var(--muted-color) !important;
+}
+
+
+/* =========================================
+   RECIPE RESULTS
+   ========================================= */
 
 #recipe-output {
     width: 100% !important;
-    max-width: none !important;
     min-width: 0 !important;
+
+    box-sizing: border-box !important;
 }
 
 .recipe-results {
     width: 100% !important;
-    max-width: none !important;
-    box-sizing: border-box;
+    min-width: 0 !important;
+
+    box-sizing: border-box !important;
 }
 
 .results-heading {
-    text-align: center;
+    text-align: center !important;
+
     color: var(--text-color) !important;
-    font-size: 1.7rem;
-    line-height: 1.4;
-    margin: 36px 0 26px;
+
+    font-size: 1.7rem !important;
+    line-height: 1.4 !important;
+
+    margin: 36px 0 26px !important;
 }
 
-/* Tekoälyn suositukset */
+
+/* =========================================
+   AI RECOMMENDATIONS
+   ========================================= */
 
 .ai-recommendations {
-    width: 100%;
-    max-width: 1100px;
-    margin: 24px auto 34px;
-    padding: 26px 30px;
-    box-sizing: border-box;
+    width: 100% !important;
+    max-width: 1100px !important;
 
-    background: #f1e7db !important;
+    margin: 24px auto 34px !important;
+
+    padding: 26px 30px !important;
+    box-sizing: border-box !important;
+
+    background: var(--recommendation-bg) !important;
     color: var(--text-color) !important;
 
-    border: 1px solid #e5d5c3 !important;
-    border-radius: 18px;
+    border: 1px solid var(--recommendation-border) !important;
+    border-radius: 18px !important;
 
-    line-height: 1.8;
+    line-height: 1.8 !important;
     overflow-wrap: anywhere;
 }
 
-.ai-recommendations h2,
-.ai-recommendations h3 {
+.ai-recommendations h2 {
+    margin-top: 0 !important;
+
+    font-size: 1.35rem !important;
+    line-height: 1.45 !important;
+
     color: var(--text-color) !important;
-    margin-top: 0;
-    font-size: 1.35rem;
-    line-height: 1.45;
 }
 
-.ai-recommendations p,
+.ai-recommendations ol {
+    padding-left: 24px !important;
+}
+
 .ai-recommendations li {
-    color: var(--muted-color) !important;
-    line-height: 1.8;
+    margin-bottom: 14px !important;
+    line-height: 1.7 !important;
 }
 
-/* Reseptikorttien asettelu */
+.ai-recommendations li p {
+    margin: 4px 0 0 !important;
+    color: var(--muted-color) !important;
+}
+
+.ai-note {
+    color: var(--muted-color) !important;
+    font-style: italic;
+}
+
+
+/* =========================================
+   RECIPE CARDS - TWO COLUMNS
+   ========================================= */
 
 .recipe-grid {
     display: grid !important;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 24px;
-    align-items: stretch;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr)) !important;
+
+    gap: 24px !important;
+    align-items: stretch !important;
 
     width: 100% !important;
-    max-width: none !important;
-    box-sizing: border-box;
+    min-width: 0 !important;
+
+    box-sizing: border-box !important;
 }
 
-/* Yksittäinen reseptikortti */
-
 .recipe-card {
-    width: 100%;
-    min-width: 0;
-    height: 100%;
-    padding: 22px;
-    box-sizing: border-box;
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 100% !important;
+
+    padding: 22px !important;
+
+    box-sizing: border-box !important;
     overflow-wrap: anywhere;
 
     background: var(--card-bg) !important;
@@ -342,58 +393,91 @@ body {
     border-radius: 18px !important;
 
     box-shadow: var(--soft-shadow) !important;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
 }
 
 .recipe-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(73, 55, 43, 0.09) !important;
+
+    box-shadow:
+        0 8px 24px rgba(73, 55, 43, 0.09) !important;
 }
 
 .recipe-card h3 {
     color: var(--text-color) !important;
-    font-size: 1.25rem;
-    line-height: 1.45;
-    margin-top: 8px;
-    margin-bottom: 16px;
+
+    font-size: 1.25rem !important;
+    line-height: 1.45 !important;
+
+    margin: 8px 0 10px !important;
 }
 
-.recipe-card p,
-.recipe-card li {
+.recipe-card p {
     color: var(--muted-color) !important;
-    line-height: 1.75;
-    margin-bottom: 14px;
+
+    line-height: 1.75 !important;
+    margin-bottom: 14px !important;
 }
 
 .recipe-card strong {
     color: var(--text-color) !important;
 }
 
-/* Reseptikuvat */
-
-.recipe-image {
-    display: block;
-    width: 100%;
-    height: 230px;
-    object-fit: cover;
-    border-radius: 12px;
-    margin-bottom: 18px;
+.recipe-source {
+    font-size: 0.85rem !important;
+    color: var(--muted-color) !important;
+    margin-bottom: 18px !important;
 }
 
-/* Valmistusohjeet */
+.recipe-detail {
+    margin-bottom: 16px !important;
+}
+
+.recipe-detail p {
+    margin: 6px 0 0 !important;
+}
+
+
+/* =========================================
+   RECIPE IMAGES
+   ========================================= */
+
+.recipe-image {
+    display: block !important;
+
+    width: 100% !important;
+    height: 230px !important;
+
+    object-fit: cover !important;
+
+    border-radius: 12px !important;
+    margin-bottom: 18px !important;
+}
+
+
+/* =========================================
+   COOKING INSTRUCTIONS
+   ========================================= */
 
 .recipe-instructions-container {
-    margin-top: 20px;
-    border-top: 1px solid var(--border-color);
-    padding-top: 8px;
+    margin-top: 20px !important;
+    padding-top: 8px !important;
+
+    border-top: 1px solid var(--border-color) !important;
 }
 
 .recipe-summary {
     cursor: pointer;
+
     color: var(--accent-hover) !important;
-    font-weight: 600;
-    line-height: 1.6;
-    padding: 12px 0;
+
+    font-weight: 600 !important;
+    line-height: 1.6 !important;
+
+    padding: 12px 0 !important;
 }
 
 .recipe-summary:hover {
@@ -401,14 +485,87 @@ body {
 }
 
 .recipe-instructions {
+    margin-top: 12px !important;
+
     color: var(--muted-color) !important;
+
     white-space: pre-line;
-    line-height: 1.9;
+    line-height: 1.9 !important;
+
     overflow-wrap: anywhere;
-    margin-top: 12px;
 }
 
-/* Tabletit */
+.recipe-instructions p {
+    white-space: pre-line;
+}
+
+
+/* =========================================
+   CHATBOT
+   ========================================= */
+
+#chat-header {
+    text-align: center !important;
+    margin: 28px auto !important;
+}
+
+#chat-header h2 {
+    color: var(--text-color) !important;
+}
+
+#chat-header p {
+    color: var(--muted-color) !important;
+}
+
+#selected-recipe {
+    width: 100% !important;
+}
+
+#chatbot-panel {
+    border: 1px solid var(--border-color) !important;
+    border-radius: 16px !important;
+}
+
+#chat-input-row {
+    width: 100% !important;
+    align-items: end !important;
+}
+
+#chat-message-input textarea {
+    background: var(--card-bg) !important;
+    color: var(--text-color) !important;
+
+    border-color: var(--border-color) !important;
+    border-radius: 12px !important;
+}
+
+#chat-send-button {
+    min-height: 48px !important;
+
+    background: var(--accent-color) !important;
+    border-color: var(--accent-color) !important;
+
+    color: #ffffff !important;
+    border-radius: 12px !important;
+}
+
+#chat-send-button * {
+    color: #ffffff !important;
+}
+
+#chat-send-button:hover {
+    background: var(--accent-hover) !important;
+    border-color: var(--accent-hover) !important;
+}
+
+#chat-clear-button {
+    border-radius: 12px !important;
+}
+
+
+/* =========================================
+   TABLETS
+   ========================================= */
 
 @media (max-width: 900px) {
     .gradio-container {
@@ -422,19 +579,22 @@ body {
     }
 
     .recipe-grid {
-        gap: 18px;
+        gap: 18px !important;
     }
 
     .recipe-card {
-        padding: 18px;
+        padding: 18px !important;
     }
 
     .recipe-image {
-        height: 200px;
+        height: 200px !important;
     }
 }
 
-/* Puhelimet */
+
+/* =========================================
+   MOBILE
+   ========================================= */
 
 @media (max-width: 600px) {
     .gradio-container {
@@ -443,108 +603,50 @@ body {
     }
 
     #app-header {
-        margin-top: 18px;
-        margin-bottom: 24px;
+        margin-top: 18px !important;
+        margin-bottom: 24px !important;
     }
 
     #search-panel {
         width: 100% !important;
         max-width: 100% !important;
+
         padding: 18px !important;
         border-radius: 16px !important;
     }
 
     .recipe-grid {
-        grid-template-columns: minmax(0, 1fr) !important;
-        gap: 16px;
+        grid-template-columns:
+            minmax(0, 1fr) !important;
+
+        gap: 16px !important;
     }
 
     .recipe-card {
-        padding: 18px;
+        padding: 18px !important;
         border-radius: 16px !important;
     }
 
     .recipe-image {
-        height: 220px;
+        height: 220px !important;
     }
 
     .ai-recommendations {
-        padding: 20px;
-        border-radius: 16px;
+        padding: 20px !important;
+        border-radius: 16px !important;
     }
 
     .results-heading {
-        font-size: 1.45rem;
-        margin-top: 28px;
-    }
-}
-
-/* Gradio-asettelun leveyskorjaus */
-
-.gradio-container {
-    width: 100% !important;
-    max-width: 1600px !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
-}
-
-#search-panel-column {
-    min-width: 0 !important;
-}
-
-#search-panel {
-    width: 100% !important;
-    max-width: 1100px !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
-}
-
-/* Lomakkeen sisältö ja tekstivärit */
-
-#search-panel,
-#search-panel label,
-#search-panel p {
-    color: #49372b !important;
-}
-
-#search-panel input,
-#search-panel textarea,
-#search-panel [role="combobox"] {
-    color: #49372b !important;
-    background-color: #ffffff !important;
-    border-color: #e8ded2 !important;
-}
-
-/* Terrakotta korostusväri */
-
-#search-panel input[type="range"],
-#search-panel input[type="checkbox"],
-#search-panel input[type="radio"] {
-    accent-color: #c87542 !important;
-}
-
-#search-button,
-#search-button button {
-    background: #c87542 !important;
-    border-color: #c87542 !important;
-    color: #ffffff !important;
-}
-
-#search-button button:hover {
-    background: #ad6035 !important;
-    border-color: #ad6035 !important;
-}
-
-/* Pienillä näytöillä lomake käyttää koko leveyden */
-
-@media (max-width: 600px) {
-    #search-panel-column {
-        min-width: 0 !important;
+        font-size: 1.45rem !important;
+        margin-top: 28px !important;
     }
 
-    #search-panel {
+    #chat-input-row {
+        flex-direction: column !important;
+        align-items: stretch !important;
+    }
+
+    #chat-send-button {
         width: 100% !important;
-        max-width: 100% !important;
-        padding: 18px !important;
     }
 }

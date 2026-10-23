@@ -1,194 +1,302 @@
 
 import html
-import traceback
-from pathlib import Path
+import logging
 
 import gradio as gr
 
 from src.services.recipe_service import search_recipes
-from src.services.ai_service import (
-    format_api_recipes,
-    chat_with_assistant,
+from src.services.ai_service import recommend_recipes, chat_with_assistant
+from src.capabilities.memory import (
+    UserPreferences,
+    load_preferences,
+    save_preferences,
+    parse_staples,
+    remove_pantry_staples,
 )
 
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-CSS_PATH = PROJECT_ROOT / "static" / "style.css"
+logger = logging.getLogger(__name__)
+
+DIET_CHOICES = [
+    "No dietary restrictions",
+    "Vegetarian",
+    "Vegan",
+    "Gluten-free",
+    "Lactose-free",
+]
+
+DIET_TRANSLATIONS = {
+    "Ei erityisruokavaliota": "No dietary restrictions",
+    "Kasvisruoka": "Vegetarian",
+    "Vegaaninen": "Vegan",
+    "Gluteeniton": "Gluten-free",
+    "Laktoositon": "Lactose-free",
+}
+
+NO_RECIPE_SELECTED = "No recipe selected"
 
 
 def create_theme():
-    """Luo sovelluksen väriteeman."""
-
     return gr.themes.Soft(
         primary_hue="orange",
         secondary_hue="stone",
         neutral_hue="stone",
-    ).set(
-        body_background_fill="#f7f3ed",
-        body_text_color="#49372b",
-        block_background_fill="#fffcf8",
-        block_border_color="#e8ded2",
-        input_background_fill="#ffffff",
-        input_border_color="#e8ded2",
-        input_placeholder_color="#998779",
-        button_primary_background_fill="#c87542",
-        button_primary_background_fill_hover="#ad6035",
-        button_primary_text_color="#ffffff",
     )
 
 
-def find_recipes(ingredients, diet, max_time):
-    """Hakee reseptit ja palauttaa käyttöliittymän tulokset."""
+def safe_text(value):
+    return html.escape(str(value or ""), quote=True)
+
+
+def create_recipe_card(recipe):
+    name = safe_text(recipe.get("name", "Unnamed recipe"))
+    image_url = str(recipe.get("image") or "")
+
+    image_html = ""
+    if image_url.startswith(("https://", "http://")):
+        image_html = (
+            f'<img class="recipe-image" '
+            f'src="{safe_text(image_url)}" '
+            f'alt="{name}" loading="lazy">'
+        )
+
+    matched = recipe.get("matched_ingredients") or []
+    missing = recipe.get("missing_ingredients") or []
+    ingredients = recipe.get("ingredients") or []
+
+    matched_text = (
+        ", ".join(safe_text(x) for x in matched)
+        or "No matching ingredients identified"
+    )
+
+    missing_text = (
+        ", ".join(safe_text(x) for x in missing)
+        or "No additional ingredients identified"
+    )
+
+    ingredients_text = (
+        ", ".join(safe_text(x) for x in ingredients)
+        or "Ingredient information unavailable"
+    )
+
+    instructions = safe_text(
+        recipe.get("instructions")
+        or "Cooking instructions are unavailable."
+    )
+
+    source = recipe.get("source", "")
+    source_name = {
+        "api": "TheMealDB",
+        "rag": "Local recipe collection",
+    }.get(source, "Recipe collection")
+
+    return f"""
+    <article class="recipe-card">
+        {image_html}
+        <h3>{name}</h3>
+        <p class="recipe-source">{safe_text(source_name)}</p>
+
+        <div class="recipe-detail">
+            <strong>Ingredients you have:</strong>
+            <p>{matched_text}</p>
+        </div>
+
+        <div class="recipe-detail">
+            <strong>Additional ingredients needed:</strong>
+            <p>{missing_text}</p>
+        </div>
+
+        <details class="recipe-instructions-container">
+            <summary class="recipe-summary">
+                View cooking instructions
+            </summary>
+
+            <div class="recipe-instructions">
+                <strong>Recipe ingredients:</strong>
+                <p>{ingredients_text}</p>
+
+                <strong>Instructions:</strong>
+                <p>{instructions}</p>
+            </div>
+        </details>
+    </article>
+    """
+
+
+def create_recommendations_html(recommendation, recipes):
+    if recommendation is None:
+        return ""
+
+    known_names = {
+        str(recipe.get("name", "")).casefold()
+        for recipe in recipes
+    }
+
+    items = []
+
+    for pick in recommendation.picks:
+        name = str(pick.recipe_name)
+
+        if name.casefold() not in known_names:
+            continue
+
+        items.append(
+            "<li>"
+            f"<strong>{safe_text(name)}</strong>"
+            f"<p>{safe_text(pick.reason)}</p>"
+            "</li>"
+        )
+
+    items_html = (
+        "<ol>" + "".join(items) + "</ol>"
+        if items
+        else "<p>No specific recommendations were available.</p>"
+    )
+
+    note = safe_text(recommendation.note)
+    note_html = (
+        f"<p class='ai-note'>{note}</p>"
+        if note
+        else ""
+    )
+
+    return f"""
+    <section class="ai-recommendations">
+        <h2>🤖 Llama 3.2 Recommendations</h2>
+        {items_html}
+        {note_html}
+    </section>
+    """
+
+
+def find_recipes(ingredients, diet, pantry_text):
+    empty_selection = gr.update(
+        choices=[NO_RECIPE_SELECTED],
+        value=NO_RECIPE_SELECTED,
+    )
 
     if not ingredients or not ingredients.strip():
         return (
             "",
-            "Kirjoita ensin vähintään yksi ainesosa.",
+            "Please enter at least one ingredient.",
             [],
-            gr.update(choices=[], value=None),
+            empty_selection,
             [],
         )
 
     try:
-        recipes = search_recipes(ingredients)
+        staples = parse_staples(pantry_text or "")
     except Exception:
-        traceback.print_exc()
+        logger.exception("Could not parse pantry staples")
+        staples = []
+
+    try:
+        save_preferences(
+            UserPreferences(
+                diet=diet,
+                pantry_staples=staples,
+            )
+        )
+    except Exception:
+        logger.exception("Could not save preferences")
+
+    diet_preferences = (
+        []
+        if diet == "No dietary restrictions"
+        else [diet]
+    )
+
+    try:
+        recipes = search_recipes(
+            ingredients_text=ingredients.strip(),
+            diet_preferences=diet_preferences,
+            limit=10,
+        )
+    except Exception:
+        logger.exception("Recipe search failed")
         return (
             "",
-            "Reseptien haku epäonnistui. Tarkista verkkoyhteys ja yritä uudelleen.",
+            "Recipe search failed. Check the terminal for details.",
             [],
-            gr.update(choices=[], value=None),
+            empty_selection,
             [],
         )
 
     if not recipes:
         return (
             "",
-            "Reseptejä ei löytynyt. Kokeile muita aineksia.",
+            "No recipes found. Try other ingredients or "
+            "a different dietary preference.",
             [],
-            gr.update(choices=[], value=None),
+            empty_selection,
             [],
         )
-
-    cards = []
-
-    for recipe in recipes[:10]:
-        name = html.escape(
-            str(recipe.get("name") or "Nimetön resepti")
-        )
-        image_url = str(recipe.get("image") or "")
-        matched = recipe.get("matched_ingredients", [])
-        missing = recipe.get("missing_ingredients", [])
-        instructions = str(recipe.get("instructions") or "")
-
-        matched_html = ", ".join(
-            html.escape(str(item)) for item in matched
-        )
-        missing_html = ", ".join(
-            html.escape(str(item)) for item in missing
-        )
-        instructions_html = html.escape(instructions)
-
-        image_html = ""
-
-        if image_url.startswith(("https://", "http://")):
-            safe_image_url = html.escape(image_url, quote=True)
-            image_html = (
-                f'<img class="recipe-image" src="{safe_image_url}" '
-                f'alt="{name}" loading="lazy">'
-            )
-
-        cards.append(
-            f"""
-            <article class="recipe-card">
-                {image_html}
-                <h3>{name}</h3>
-
-                <p>
-                    <strong>Sinulta löytyvät:</strong><br>
-                    {matched_html or "Ei tunnistettuja osumia"}
-                </p>
-
-                <p>
-                    <strong>Mahdollisesti puuttuvat:</strong><br>
-                    {missing_html or "Ei tunnistettuja puuttuvia aineksia"}
-                </p>
-
-                <details class="recipe-instructions-container">
-                    <summary class="recipe-summary">
-                        Avaa alkuperäinen valmistusohje
-                    </summary>
-                    <div class="recipe-instructions">
-                        {instructions_html or "Valmistusohje puuttuu."}
-                    </div>
-                </details>
-            </article>
-            """
-        )
-
-    ai_html = ""
-    status_message = (
-        f"Haettiin {len(recipes)} reseptiä. "
-        f"Näytetään enintään {min(len(recipes), 10)} reseptiä."
-    )
 
     try:
-        ai_response = format_api_recipes(
+        recipes = remove_pantry_staples(recipes, staples)
+    except Exception:
+        logger.exception("Could not process pantry staples")
+
+    recipes = recipes[:10]
+
+    cards_html = "".join(
+        create_recipe_card(recipe)
+        for recipe in recipes
+    )
+
+    recommendation_html = ""
+    status = f"Found {len(recipes)} recipes."
+
+    try:
+        recommendation = recommend_recipes(
             ingredients=ingredients,
             recipes=recipes[:5],
             diet=diet,
-            max_time=int(max_time),
         )
 
-        if ai_response and ai_response.strip():
-            safe_ai_response = html.escape(ai_response.strip())
-            safe_ai_response = safe_ai_response.replace("\n", "<br>")
-
-            ai_html = f"""
-            <section class="ai-recommendations">
-                <h2>🤖 Llama 3.2:n suositukset</h2>
-                <p>
-                    Tekoäly vertailee löytyneitä reseptejä
-                    antamiesi ainesten perusteella.
-                </p>
-                <div>{safe_ai_response}</div>
-            </section>
-            """
-
+        recommendation_html = create_recommendations_html(
+            recommendation,
+            recipes[:5],
+        )
     except Exception:
-        traceback.print_exc()
-        status_message += (
-            " AI-suosituksia ei saatu tällä kertaa, "
-            "mutta reseptit näytetään normaalisti."
+        logger.exception("AI recommendations failed")
+        status += (
+            " AI recommendations are currently unavailable, "
+            "but the recipe search succeeded."
         )
 
-    output = f"""
+    results_html = f"""
     <div class="recipe-results">
-        {ai_html}
-        <h2 class="results-heading">🍳 TheMealDB:n reseptit</h2>
+        {recommendation_html}
+
+        <h2 class="results-heading">🍳 Found Recipes</h2>
+
         <div class="recipe-grid">
-            {''.join(cards)}
+            {cards_html}
         </div>
     </div>
     """
 
-    available_recipes = recipes[:10]
     recipe_names = [
-        str(recipe.get("name") or "Nimetön resepti")
-        for recipe in available_recipes
+        str(recipe.get("name") or "Unnamed recipe")
+        for recipe in recipes
+    ]
+
+    recipe_choices = [
+        NO_RECIPE_SELECTED,
+        *recipe_names,
     ]
 
     return (
-        output,
-        status_message,
-        available_recipes,
+        results_html,
+        status,
+        recipes,
         gr.update(
-            choices=recipe_names,
-            value=recipe_names[0] if recipe_names else None,
+            choices=recipe_choices,
+            value=NO_RECIPE_SELECTED,
         ),
         [],
     )
-
 
 
 def respond_to_chat(
@@ -196,29 +304,31 @@ def respond_to_chat(
     history,
     ingredients,
     diet,
-    max_time,
     selected_recipe_name,
     recipes,
 ):
-    """Käsittelee keskustelun Gradio 6.30:n viestimuodossa."""
-
     history = list(history or [])
 
     if not message or not message.strip():
         return history, ""
 
-    message = message.strip()
+    user_message = message.strip()
 
-    selected_recipe = next(
-        (
-            recipe
-            for recipe in (recipes or [])
-            if recipe.get("name") == selected_recipe_name
-        ),
-        None,
-    )
+    selected_recipe = None
 
-    # Säilytetään vain kelvolliset keskusteluviestit.
+    if (
+        selected_recipe_name
+        and selected_recipe_name != NO_RECIPE_SELECTED
+    ):
+        selected_recipe = next(
+            (
+                recipe
+                for recipe in (recipes or [])
+                if recipe.get("name") == selected_recipe_name
+            ),
+            None,
+        )
+
     ai_history = [
         {
             "role": item["role"],
@@ -232,163 +342,196 @@ def respond_to_chat(
 
     try:
         answer = chat_with_assistant(
-            message=message,
+            message=user_message,
             history=ai_history,
             ingredients=ingredients or "",
-            diet=diet or "Ei erityisruokavaliota",
-            max_time=int(max_time),
+            diet=diet or "No dietary restrictions",
             selected_recipe=selected_recipe,
         )
 
         answer = str(answer or "").strip()
 
         if not answer:
-            answer = "Tekoäly ei tällä kertaa tuottanut vastausta."
+            answer = "The AI did not generate a response."
 
     except Exception:
-        traceback.print_exc()
+        logger.exception("Chatbot response failed")
         answer = (
-            "Viestin käsittely epäonnistui. Tarkista, että Ollama "
-            "on käynnissä ja Llama 3.2 -malli on asennettu. "
-            "Tarkempi virheilmoitus löytyy terminaalista."
+            "I couldn't generate a response. "
+            "Please check that Ollama is running and try again."
         )
 
-    history.append({
-        "role": "user",
-        "content": message,
-    })
-    history.append({
-        "role": "assistant",
-        "content": answer,
-    })
+    history.append(
+        {
+            "role": "user",
+            "content": user_message,
+        }
+    )
+
+    history.append(
+        {
+            "role": "assistant",
+            "content": answer,
+        }
+    )
 
     return history, ""
 
 
 def clear_chat():
-    """Tyhjentää keskusteluhistorian."""
-
     return []
 
 
-def create_ui():
-    """Rakentaa sovelluksen käyttöliittymän."""
+def load_saved_preferences():
+    try:
+        preferences = load_preferences()
 
-    if not CSS_PATH.is_file():
-        raise FileNotFoundError(
-            f"CSS-tiedostoa ei löytynyt: {CSS_PATH}"
+        diet = DIET_TRANSLATIONS.get(
+            preferences.diet,
+            preferences.diet,
         )
 
+        if diet not in DIET_CHOICES:
+            diet = "No dietary restrictions"
+
+        staples = ", ".join(
+            str(item)
+            for item in (preferences.pantry_staples or [])
+        )
+
+        return diet, staples
+
+    except Exception:
+        logger.exception("Could not load saved preferences")
+        return "No dietary restrictions", ""
+
+
+def create_ui():
     with gr.Blocks(
-        title="Mitä tänään syötäisiin?"
+        title="What Should I Cook Today?",
+        theme=create_theme(),
     ) as demo:
 
         gr.Markdown(
             """
-            # 🍳 Mitä tänään syötäisiin?
-            ### Löydä ruokaideoita niistä aineksista, joita sinulla jo on.
+            # 🍳 What Should I Cook Today?
+            Discover recipes using ingredients you already have.
             """,
             elem_id="app-header",
         )
 
         recipes_state = gr.State([])
 
-        with gr.Row():
-            with gr.Column(scale=1, min_width=0):
-                pass
+        # Recipe search panel
+        with gr.Column(elem_id="search-panel-column"):
+            with gr.Column(elem_id="search-panel"):
 
-            with gr.Column(
-                scale=10,
-                min_width=0,
-                elem_id="search-panel-column",
-            ):
-                with gr.Column(elem_id="search-panel"):
-                    ingredients = gr.Textbox(
-                        label="Mitä aineksia sinulla on?",
-                        placeholder="Esim. chicken, rice, tomato",
-                        lines=2,
-                        elem_id="ingredients-input",
-                    )
+                ingredients = gr.Textbox(
+                    label="What ingredients do you have?",
+                    placeholder="e.g. chicken, rice, tomato",
+                    lines=2,
+                    elem_id="ingredients-input",
+                )
 
-                    diet = gr.Dropdown(
-                        choices=[
-                            "Ei erityisruokavaliota",
-                            "Kasvisruoka",
-                            "Vegaaninen",
-                            "Gluteeniton",
-                            "Laktoositon",
-                        ],
-                        value="Ei erityisruokavaliota",
-                        label="Ruokavalio",
-                        elem_id="diet-select",
-                    )
+                diet = gr.Dropdown(
+                    choices=DIET_CHOICES,
+                    value="No dietary restrictions",
+                    label="Dietary preference",
+                    elem_id="diet-select",
+                )
 
-                    max_time = gr.Slider(
-                        minimum=10,
-                        maximum=120,
-                        value=30,
-                        step=10,
-                        label="Enimmäisvalmistusaika (min)",
-                        elem_id="time-slider",
-                    )
+                pantry = gr.Textbox(
+                    label="Pantry staples you always have",
+                    info=(
+                        "These ingredients will not appear in "
+                        "the missing ingredients list. "
+                        "Preferences are saved when searching."
+                    ),
+                    placeholder="e.g. salt, pepper, olive oil",
+                    lines=1,
+                    elem_id="pantry-input",
+                )
 
-                    search_button = gr.Button(
-                        "🔎 Hae reseptejä",
-                        variant="primary",
-                        elem_id="search-button",
-                    )
+                search_button = gr.Button(
+                    "🔎 Find Recipes",
+                    variant="primary",
+                    elem_id="search-button",
+                )
 
         status = gr.Markdown(
-            "Reseptiehdotukset ilmestyvät tähän.",
+            "Your recipe suggestions will appear here.",
             elem_id="status-message",
         )
 
-        recipe_output = gr.HTML(elem_id="recipe-output")
+        recipe_output = gr.HTML(
+            elem_id="recipe-output",
+        )
 
         gr.Markdown("---")
 
         gr.Markdown(
             """
-            ## 💬 Kysy lisää ruoka-assistentilta
+            ## 💬 Ask the AI Cooking Assistant
 
-            Kysy resepteistä, pyydä vaihtoehtoja tai tarkenna valmistusohjeita.
-            """
+            Ask general cooking questions, get ingredient
+            substitution ideas, or discuss a specific recipe.
+
+            You can start chatting without searching for
+            or selecting a recipe.
+            """,
+            elem_id="chat-header",
         )
 
         selected_recipe = gr.Dropdown(
-            choices=[],
-            label="Resepti, josta haluat keskustella",
+            choices=[NO_RECIPE_SELECTED],
+            value=NO_RECIPE_SELECTED,
+            label="Recipe to discuss (optional)",
             info=(
-                "Valitse resepti tai jätä valinta ennalleen "
-                "yleisiä kysymyksiä varten."
+                "Leave this as 'No recipe selected' for "
+                "general cooking questions. "
+                "Choose a recipe after searching if you "
+                "want recipe-specific help."
             ),
             interactive=True,
-        )
+            elem_id="selected-recipe",
+            )
 
         chatbot = gr.Chatbot(
-            label="Keskustelu Llama 3.2:n kanssa",
+            label="Chat with Llama 3.2",
             height=380,
+            elem_id="chatbot-panel",
         )
 
-        with gr.Row():
+        with gr.Row(elem_id="chat-input-row"):
             chat_message = gr.Textbox(
-                label="Viesti",
-                placeholder="Esim. Millä voisin korvata kerman?",
+                label="Your message",
+                placeholder=(
+                    "e.g. What can I cook with potatoes and eggs?"
+                ),
                 lines=2,
                 scale=5,
+                elem_id="chat-message-input",
             )
 
             send_button = gr.Button(
-                "Lähetä",
+                "Send",
                 variant="primary",
                 scale=1,
+                elem_id="chat-send-button",
             )
 
-        clear_button = gr.Button("Tyhjennä keskustelu")
+        clear_button = gr.Button(
+            "Clear conversation",
+            elem_id="chat-clear-button",
+        )
 
         search_button.click(
             fn=find_recipes,
-            inputs=[ingredients, diet, max_time],
+            inputs=[
+                ingredients,
+                diet,
+                pantry,
+            ],
             outputs=[
                 recipe_output,
                 status,
@@ -403,12 +546,14 @@ def create_ui():
             chatbot,
             ingredients,
             diet,
-            max_time,
             selected_recipe,
             recipes_state,
         ]
 
-        chat_outputs = [chatbot, chat_message]
+        chat_outputs = [
+            chatbot,
+            chat_message,
+        ]
 
         send_button.click(
             fn=respond_to_chat,
@@ -428,14 +573,10 @@ def create_ui():
             outputs=[chatbot],
         )
 
+        demo.load(
+            fn=load_saved_preferences,
+            inputs=[],
+            outputs=[diet, pantry],
+        )
+
     return demo
-
-
-if __name__ == "__main__":
-    app = create_ui()
-    css_content = CSS_PATH.read_text(encoding="utf-8")
-
-    app.launch(
-        css=css_content,
-        theme=create_theme(),
-    )
