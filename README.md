@@ -144,7 +144,7 @@ python convert_recipes.py
 The system's RAG fallback and deterministic dietary filtering were evaluated using specific test cases (successful search, difficult constraints, allergen filtering, and API failure simulation). 
 - **Pass Rate:** 100% (4/4 test cases passed).
 - The dietary filter correctly identified and removed recipes containing dairy and gluten when required.
-Full evaluation details and failure analysis can be found in [`evaluation/evaluation_results.md`](evaluation/evaluation_results.md).
+Full evaluation details and failure analysis can be found in [`evaluation/evaluation_results_summary.md`](evaluation/evaluation_results_summary.md).
 
 ## Known limitations
 
