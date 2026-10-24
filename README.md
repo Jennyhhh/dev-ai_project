@@ -8,6 +8,9 @@ Starter template for the **Development of AI Applications** course final group p
 - Member 2 Saija Joronen (saija21006@student.hamk.fi) github: soijj98
 - Member 3 Joona Peltola (joona23005@student.hamk.fi) github: joonaleksanteri
 
+## Presentation Video
+[Link to our final project presentation video] 
+
 ## Problem
 
 ### Intended users
@@ -27,7 +30,9 @@ An AI-powered recipe app that suggests recipes based on the ingredients, prefere
 
 1. **User Input:** The user submits a prompt or query via the Gradio user interface.
 2. **Processing & Guardrails:** The application service layer (`src/services/ai_service.py`) validates and formats the request.
-3. **Model Response:** The model client calls Ollama locally and returns the response back through the service layer to the UI.
+3. **RAG Fallback:** If the API fails, the service retrieves recipes locally from the RAG database using embeddings/keyword matching.
+4. **Dietary Filtering:** A deterministic filter removes any recipes containing ingredients that violate the user's dietary preferences (e.g., dairy, gluten, meat).
+5. **Model Response:** The model client calls Ollama locally and returns the response back through the service layer to the UI.
 
 ## Architecture
 
@@ -128,16 +133,22 @@ Then open your browser at `http://localhost:7860`.
 ```bash
 pytest
 ```
+### 7. Prepare local RAG data
+To use the offline fallback search, generate the recipe JSON from the raw Kaggle dataset:
+```bash
+python convert_recipes.py
+```
 
 ## Evaluation
 
-Describe your evaluation methodology and summarize key results. Starter test cases can be found in [`evaluation/test_cases.json`](evaluation/test_cases.json).
-
-Refer to [`evaluation/README.md`](evaluation/README.md) for guidelines on defining success, edge cases, and failure scenarios.
+The system's RAG fallback and deterministic dietary filtering were evaluated using specific test cases (successful search, difficult constraints, allergen filtering, and API failure simulation). 
+- **Pass Rate:** 100% (4/4 test cases passed).
+- The dietary filter correctly identified and removed recipes containing dairy and gluten when required.
+Full evaluation details and failure analysis can be found in [`evaluation/evaluation_results.md`](evaluation/evaluation_results.md).
 
 ## Known limitations
 
-- Highlight known system limitations, unhandled edge cases, or boundaries of current capabilities.
+- **Language Barrier in RAG:** The current local dataset (`recipes.json`) uses English recipes. If a user inputs ingredients in Finnish (e.g., "omena"), the basic RAG search might fail to match them correctly without a multilingual embedding model or a translation step before retrieval.
 
 ## Future improvements
 
