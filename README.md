@@ -59,6 +59,26 @@ Ollama (Local LLM Server)
 - We chose llama3.2 as our starting model because it is lightweight enough to run on all team members' laptops, requires no API keys or
   usage costs, and keeps user data on the local machine. Can be changed later if we see it necessary.
 
+## Reliable model interaction
+
+The AI can only recommend recipes that the app has really found. This is done in five ways:
+
+- **Clear instructions** (`src/services/prompts.py`): the AI gets the user's ingredients, diet and
+  the found recipes. It is told to choose only from these recipes. It must not invent recipes,
+  ingredients or cooking times.
+- **Fixed answer format:** the AI must answer in JSON with a fixed structure
+  (`src/schemas/responses.py`). Ollama makes sure the answer follows this structure.
+- **Answer check and retry:** the app checks the answer with Pydantic. If the answer is broken,
+  the AI gets one more try. If it fails again, the recipes are still shown, but without
+  AI recommendations.
+- **Wrong recipes removed:** if the AI recommends a recipe that was not found, or the same
+  recipe twice, the app removes it and writes a warning to the log.
+- **Facts from code:** the app itself calculates which of the user's ingredients a recipe uses.
+  This is shown next to each recommendation. The AI only writes the reason.
+
+We use English for the AI, because in our tests llama3.2 made mistakes in Finnish and invented
+things, like cooking times. In English it followed the instructions better.
+
 ## Additional AI capability
 
 Select at least one additional capability to implement for your final project:
@@ -145,6 +165,27 @@ The system's RAG fallback and deterministic dietary filtering were evaluated usi
 - **Pass Rate:** 100% (4/4 test cases passed).
 - The dietary filter correctly identified and removed recipes containing dairy and gluten when required.
 Full evaluation details and failure analysis can be found in [`evaluation/evaluation_results_summary.md`](evaluation/evaluation_results_summary.md).
+
+
+### AI recommendations and memory (manual tests)
+
+We tested the AI recommendations and memory by hand during development. The AI answers are
+written text and change a little every time, so a person must read them to check if they are
+correct. Every problem we found led to a fix.
+
+| # | Input | Expected | Result at the time | Action taken |
+|---|---|---|---|---|
+| 1 | First prompt, `chicken, pasta` | Correct recommendation | fail: bad Finnish, invented cooking time | New prompt in English; AI may only choose found recipes |
+| 2 | New prompt, `chicken, pasta` | Only found recipes, no cooking times | pass | - |
+| 3 | `chicken, pasta, tomato` | Correct reasons | partial: reasons sometimes named wrong ingredients | Used ingredients are now calculated in code |
+| 4 | `chicken, pasta, tomato`, vegan | No chicken recipes | fail: AI recommended chicken | Dietary filter added in code |
+| 5 | `chicken, pasta`, vegetarian | No duplicates | fail: same recipe three times | Duplicates are removed in code |
+| 6 | Pantry staples include `garlic` | Garlic not shown as missing | pass | - |
+| 7 | Restart the app | Diet and pantry staples remembered | pass | - |
+| 8 | Broken preferences file | Default settings, no crash | pass | - |
+
+**What we learned:** a small AI model does not always follow rules. Important rules, like diets
+and allergies, must be checked in code, not only told to the AI.
 
 ## Known limitations
 
