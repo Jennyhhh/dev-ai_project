@@ -24,16 +24,27 @@ because it can quickly search for many different recipes at the same time using 
 
 ## Solution
 
-An AI-powered recipe app that suggests recipes based on the ingredients, preferences, and dietary needs you provide.
+An AI-powered recipe application that suggests recipes based on available ingredients, dietary preferences, and user needs.
+
+The application includes a Gradio interface for ingredient-based recipe searching, recipe cards, dietary filtering, and an AI chatbot powered by Llama 3.2 through Ollama.
+
+Users can ask cooking-related questions, select a recipe for more specific assistance, or chat with the AI without selecting a recipe.
 
 ## Main user workflow
 
-1. **User Input:** The user submits a prompt or query via the Gradio user interface.
-2. **Processing & Guardrails:** The application service layer (`src/services/ai_service.py`) validates and formats the request.
-3. **RAG Fallback:** If the API fails, the service retrieves recipes locally from the RAG database using embeddings/keyword matching.
-4. **Dietary Filtering:** A deterministic filter removes any recipes containing ingredients that violate the user's dietary preferences (e.g., dairy, gluten, meat).
-5. **Model Response:** The model client calls Ollama locally and returns the response back through the service layer to the UI.
+## Main user workflow
 
+1. **Gradio User Interface:** The user interacts with the application through a custom Gradio interface, which includes ingredient input fields, dietary preferences, recipe cards, recipe selection, and an AI chatbot.
+2. **Recipe Search:** The user enters available ingredients, and the recipe service searches for matching recipes using TheMealDB API.
+3. **Processing & Guardrails:** The application processes ingredient matches and validates recipe information.
+4. **TheMealDB API Integration:** The recipe service communicates with TheMealDB through src/clients/recipe_api_client.py to retrieve recipes, including ingredients, instructions, and images.
+5. **RAG Fallback:** If the API fails, the service retrieves recipes locally from the RAG database using embeddings/keyword matching.
+6. **Dietary Filtering:** A deterministic filter removes recipes containing ingredients that violate the user's dietary preferences.
+7. **Recipe Results:** Matching recipes are displayed in the Gradio interface as recipe cards with relevant information.
+8. **Optional Recipe Selection:** The user can select a recipe to provide context for the AI chatbot. Selecting a recipe is not required.
+9. **AI Chatbot:** The user can ask questions about cooking, ingredients, or selected recipes. The chatbot uses conversation history to support follow-up questions.
+10. **Model Response:** The AI service communicates with the local Llama 3.2 model through Ollama and returns the generated response to the Gradio interface.
+    
 ## Architecture
 
 Below is the initial starter architecture. As your project evolves with additional capabilities, replace or extend this diagram in [`docs/architecture.md`](docs/architecture.md).
@@ -78,6 +89,21 @@ The AI can only recommend recipes that the app has really found. This is done in
 
 We use English for the AI, because in our tests llama3.2 made mistakes in Finnish and invented
 things, like cooking times. In English it followed the instructions better.
+
+## AI Chatbot features
+
+The AI chatbot was updated to support more flexible interaction with users.
+General conversation: Users can communicate with the AI assistant without selecting a recipe.
+Optional recipe context: When a recipe is selected, its information can be provided to the AI for more specific assistance.
+Conversation history: Previous messages are included in the chatbot context to support follow-up questions.
+Cooking assistance: The chatbot can answer questions about recipes, ingredients, and cooking methods.
+Error handling: The application handles model communication errors and displays feedback to the user.
+The chatbot communicates with Ollama through the AI service layer.
+Updated files:
+app/ui.py
+src/services/ai_service.py
+src/services/prompts.py
+src/models/model_client.py
 
 ## Additional AI capability
 
@@ -166,6 +192,27 @@ The system's RAG fallback and deterministic dietary filtering were evaluated usi
 - The dietary filter correctly identified and removed recipes containing dairy and gluten when required.
 Full evaluation details and failure analysis can be found in [`evaluation/evaluation_results_summary.md`](evaluation/evaluation_results_summary.md).
 
+### UI, API and Chatbot Integration Testing (Joona)
+
+The Gradio user interface, TheMealDB API integration, recipe search functionality, and AI chatbot were manually tested during development.
+The purpose of these tests was to verify that the different application components work together correctly and that users can search for recipes and interact with the AI assistant.
+
+| # | Test case | Expected result | Result |
+|---|---|---|---|
+| 1 | Application startup | Gradio application starts successfully | Pass |
+| 2 | TheMealDB API search | Recipes are retrieved from the external API | Pass |
+| 3 | Dietary filtering | Vegan, Vegetarian, and Gluten-free filters work correctly in tested cases | Pass |
+| 4 | Local RAG fallback | Recipes can be retrieved from local data when needed | Pass |
+| 5 | AI chatbot with Llama 3.2 | Chatbot responds to user questions | Pass |
+| 6 | Conversation history | Chatbot uses previous messages as context | Pass |
+| 7 | Optional recipe selection | Chatbot works with and without a selected recipe | Pass |
+| 8 | Persistent preferences end-to-end test | Preferences remain available after restarting the application | Not fully tested |
+
+**Testing summary:**
+
+The application successfully started, retrieved recipes through TheMealDB, applied dietary filtering in tested cases, and supported local RAG retrieval.
+The Llama 3.2 chatbot was tested with selected recipe context, without a selected recipe, and with conversation history. All these interactions worked during manual testing.
+The complete end-to-end testing of persistent preferences was not finished as part of this testing round.
 
 ### AI recommendations and memory (manual tests)
 
