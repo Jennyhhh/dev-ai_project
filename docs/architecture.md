@@ -1,35 +1,26 @@
+```mermaid
+flowchart TD
+    U[User] --> UI[Gradio UI]
 
-User
-  |
-  v
-Gradio UI (app/ui.py)
-  |
-  +---> Recipe Service (src/services/recipe_service.py)
-  |       |
-  |       +---> Recipe API Client (src/clients/recipe_api_client.py)
-  |       |         |
-  |       |         +---> TheMealDB API (internet)
-  |       |
-  |       +---> Local Recipe Retrieval (RAG)
-  |                 |
-  |                 +---> Local Recipe Dataset
-  |
-  +---> AI Service (src/services/ai_service.py)
-  |       |
-  |       +---> Prompts (src/services/prompts.py)
-  |       |
-  |       +---> Response Schemas (src/schemas/responses.py)
-  |       |
-  |       +---> Model Client (src/models/model_client.py)
-  |                 |
-  |                 +---> Ollama (local)
-  |                           |
-  |                           +---> Llama 3.2
-  |
-  +---> Memory (src/capabilities/memory.py)
-            |
-            +---> User Preferences (data/user_preferences.json)
+    UI --> RS[Recipe Service]
+    UI --> AI[AI Service]
+    UI --> MEM[Memory]
 
+    RS --> API[Recipe API Client]
+    API --> MEAL[TheMealDB API]
+
+    RS --> RAG[Local RAG Retrieval]
+    RAG --> DATA[(Local Recipe Dataset)]
+
+    AI --> PROMPTS[Prompts]
+    AI --> SCHEMAS[Response Schemas]
+    AI --> MODEL[Model Client]
+
+    MODEL --> OLLAMA[Ollama]
+    OLLAMA --> LLM[Llama 3.2]
+
+    MEM --> PREFS[(User Preferences JSON)]
+```
 ## Components
 
 | Component | File | What it does |
