@@ -9,7 +9,7 @@ Starter template for the **Development of AI Applications** course final group p
 - Member 3 Joona Peltola (joona23005@student.hamk.fi) github: joonaleksanteri
 
 ## Presentation Video
-[Link to our final project presentation video] 
+[[Link to our final project presentation video] ](https://youtu.be/TdNVBuheZCY)
 
 ## Problem
 
