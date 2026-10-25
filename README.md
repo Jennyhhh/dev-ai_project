@@ -1,6 +1,4 @@
-# Project name
-
-Starter template for the **Development of AI Applications** course final group project.
+What Should I Cook Today?
 
 ## Team members
 
