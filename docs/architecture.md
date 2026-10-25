@@ -1,25 +1,34 @@
-# Architecture
 
-This document describes how the recipe app is built and why it is split into these parts.
-
-## Diagram
-
-```text
 User
-  ↓
+  |
+  v
 Gradio UI (app/ui.py)
-  ├──→ Memory (src/capabilities/memory.py) ←→ data/user_preferences.json
-  │
-  ├──→ Recipe service (src/services/recipe_service.py)
-  │       ↓
-  │     Recipe API client (src/clients/recipe_api_client.py) → TheMealDB API (internet)
-  │
-  └──→ AI service (src/services/ai_service.py)
-          ├─ uses Prompts (src/services/prompts.py)
-          ├─ uses Schemas (src/schemas/responses.py)
-          ↓
-        Model client (src/models/model_client.py) → Ollama → llama3.2 (local)
-```
+  |
+  +---> Recipe Service (src/services/recipe_service.py)
+  |       |
+  |       +---> Recipe API Client (src/clients/recipe_api_client.py)
+  |       |         |
+  |       |         +---> TheMealDB API (internet)
+  |       |
+  |       +---> Local Recipe Retrieval (RAG)
+  |                 |
+  |                 +---> Local Recipe Dataset
+  |
+  +---> AI Service (src/services/ai_service.py)
+  |       |
+  |       +---> Prompts (src/services/prompts.py)
+  |       |
+  |       +---> Response Schemas (src/schemas/responses.py)
+  |       |
+  |       +---> Model Client (src/models/model_client.py)
+  |                 |
+  |                 +---> Ollama (local)
+  |                           |
+  |                           +---> Llama 3.2
+  |
+  +---> Memory (src/capabilities/memory.py)
+            |
+            +---> User Preferences (data/user_preferences.json)
 
 ## Components
 
