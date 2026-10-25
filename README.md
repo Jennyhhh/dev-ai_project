@@ -32,8 +32,6 @@ Users can ask cooking-related questions, select a recipe for more specific assis
 
 ## Main user workflow
 
-## Main user workflow
-
 1. **Gradio User Interface:** The user interacts with the application through a custom Gradio interface, which includes ingredient input fields, dietary preferences, recipe cards, recipe selection, and an AI chatbot.
 2. **Recipe Search:** The user enters available ingredients, and the recipe service searches for matching recipes using TheMealDB API.
 3. **Processing & Guardrails:** The application processes ingredient matches and validates recipe information.
@@ -240,4 +238,7 @@ and allergies, must be checked in code, not only told to the AI.
 
 ## Future improvements
 
-- List planned feature enhancements, architectural refactorings, or future capabilities.
+- **Macronutrient Goals & Tracking:** Introduce the ability for users to specify desired macros (e.g., protein, carbs, fats, calories) alongside their ingredients. The system would filter or prioritize recipes that align with the user's specific nutritional targets, providing a powerful tool for fitness and health-conscious users.
+- **Multilingual Support for RAG:** Implement an automatic translation layer before the RAG retrieval. This would allow users to search with Finnish ingredients (e.g., "omena", "kana") and still successfully match against the English local offline recipe database.
+- **Automated E2E Testing:** Expand the testing suite to include comprehensive, automated end-to-end (E2E) testing for persistent user preferences and UI interactions to ensure consistent behavior across sessions.
+- **Enhanced Recipe Extraction API:** Integrate a more advanced web-scraping or API tool to pull in a wider variety of recipes dynamically from the internet, expanding the meal options beyond the current sources.
